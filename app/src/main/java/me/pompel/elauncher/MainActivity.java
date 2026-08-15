@@ -26,7 +26,6 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.SpannableString;
@@ -69,11 +68,6 @@ public class MainActivity extends AppCompatActivity {
     private TodosRepository todosRepository;
     private CommandParser commandParser;
     private String pendingPermissionCommand;
-    private boolean isBackGesture = false;
-    private float startX = 0f;
-    private float startY = 0f;
-    private boolean isLeftEdge = false;
-    private boolean isRightEdge = false;
 
     private static final int CONTACTS_PERMISSION_REQUEST = 1001;
     private static final int CAMERA_PERMISSION_REQUEST = 1002;
@@ -141,63 +135,10 @@ public class MainActivity extends AppCompatActivity {
         if (intent != null) startActivity(intent);
     }
 
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        switch (ev.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                startX = ev.getX();
-                startY = ev.getY();
-                // Check if touch started from left or right edge (within 50dp)
-                float edgeThreshold = 50 * getResources().getDisplayMetrics().density;
-                int screenWidth = getResources().getDisplayMetrics().widthPixels;
-                
-                isLeftEdge = startX < edgeThreshold;
-                isRightEdge = startX > (screenWidth - edgeThreshold);
-                isBackGesture = false;
-                break;
-                
-            case MotionEvent.ACTION_MOVE:
-                if (isLeftEdge || isRightEdge) {
-                    float currentX = ev.getX();
-                    float currentY = ev.getY();
-                    float deltaX = currentX - startX;
-                    float deltaY = currentY - startY;
-                    
-                    // Only consider horizontal swipes (more horizontal than vertical)
-                    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
-                        if (isLeftEdge && deltaX > 0) {
-                            // Left edge swipe to the right (back gesture)
-                            isBackGesture = true;
-                        } else if (isRightEdge && deltaX < 0) {
-                            // Right edge swipe to the left (back gesture)  
-                            isBackGesture = true;
-                        }
-                    }
-                }
-                break;
-                
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_CANCEL:
-                // Reset flags when touch ends
-                break;
-        }
-        return super.dispatchTouchEvent(ev);
-    }
-
     private void handleBack() {
-        if (isBackGesture) {
-            // Block back gestures - do nothing
-        } else if (isLeftEdge) {
-            launchGesturePackageOrDefault("left_gesture_package",
-                getDefaultLeftGestureIntent());
-        } else if (isRightEdge) {
-            launchGesturePackageOrDefault("right_gesture_package",
-                getDefaultBrowserIntent());
+        if (findViewById(R.id.AppDrawer).getVisibility() == View.VISIBLE) {
+            changeLayout(true, true);
         }
-        // Reset flags
-        isBackGesture = false;
-        isLeftEdge = false;
-        isRightEdge = false;
     }
 
     @Override protected void onCreate(Bundle savedInstanceState) {
@@ -722,41 +663,6 @@ public class MainActivity extends AppCompatActivity {
         void open(String number);
     }
 
-    private boolean canOpenDialer() {
-        PackageManager packageManager = getPackageManager();
-        Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:"));
-        return intent.resolveActivity(packageManager) != null;
-    }
-
-    private String getDefaultBrowserPackage() {
-        Intent browserIntent = new Intent("android.intent.action.VIEW", Uri.parse("http://"));
-        ResolveInfo resolveInfo = getPackageManager().resolveActivity(browserIntent,PackageManager.MATCH_DEFAULT_ONLY);
-
-        if (resolveInfo == null) return null;
-
-        // This is the default browser's packageName
-        return resolveInfo.activityInfo.packageName;
-    }
-
-    private Intent getDefaultBrowserIntent() {
-        String pkg = getDefaultBrowserPackage();
-
-        // if there is no default browser, return default browser selection intent
-        if (pkg == null || pkg.equals("android")) {
-            Intent selector = new Intent(Intent.ACTION_VIEW);
-            selector.setData(Uri.parse("http://"));
-            return selector;
-        }
-
-        return getPackageManager().getLaunchIntentForPackage(pkg);
-    }
-
-    private Intent getDefaultLeftGestureIntent() {
-        return canOpenDialer()
-                ? new Intent(Intent.ACTION_DIAL, Uri.parse("tel:"))
-                : new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
-    }
-
     private List<ResolveInfo> getLaunchersResolveInfos() {
         List<ResolveInfo> launchers = new LinkedList<ResolveInfo>();
         PackageManager packageManager = getPackageManager();
@@ -799,21 +705,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void launchGesturePackageOrDefault(String prefKey, Intent defaultIntent) {
-        String pkg = prefs.getString(prefKey, "");
-        if (pkg.isEmpty()) {
-            safeStartActivity(defaultIntent);
-            return;
-        }
-        Intent intent = getPackageManager().getLaunchIntentForPackage(pkg);
-        if (intent != null) {
-            safeStartActivity(intent);
-        } else {
-            prefs.edit().remove(prefKey).apply();
-            safeStartActivity(defaultIntent);
-        }
-    }
-
     private class SwipeListener implements View.OnTouchListener {
         private final GestureDetector gestureDetector;
 
@@ -822,18 +713,8 @@ public class MainActivity extends AppCompatActivity {
                 @Override public boolean onDown(@NonNull MotionEvent e) { return true; }
                 @SuppressWarnings("JavaReflectionMemberAccess") @SuppressLint({"WrongConstant"}) @Override public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
                     assert e1 != null;
-                    float xDiff = e2.getX() - e1.getX();
                     float yDiff = e2.getY() - e1.getY();
-                    if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > 100 && Math.abs(velocityX) > 100) {
-                        if (xDiff > 0) {
-                            launchGesturePackageOrDefault("right_gesture_package",
-                                getDefaultBrowserIntent());
-                        } else {
-                            launchGesturePackageOrDefault("left_gesture_package",
-                                getDefaultLeftGestureIntent());
-                        }
-                    }
-                    else if (Math.abs(yDiff) > 100 && Math.abs(velocityY) > 100) {
+                    if (Math.abs(yDiff) > 100 && Math.abs(velocityY) > 100) {
                         if (yDiff > 0)
                             try { Class.forName("android.app.StatusBarManager").getMethod("expandNotificationsPanel").invoke(getSystemService("statusbar")); }
                             catch (Exception e) { Log.d(App.class.toString(), SwipeListener.class+": onFling", e); }

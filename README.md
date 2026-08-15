@@ -12,7 +12,7 @@ The launcher is based on NoLauncher and inspired by [OLauncher Light](https://gi
 - Swipe up from the homescreen to open the app drawer
 - Long press a homescreen app field to assign or rename an app
 - Automatically launch the single matching app result
-- Swipe down for notifications; configure left and right swipe apps in Settings
+- Swipe down for notifications
 - Double tap to open the original launcher
 - Hold empty homescreen space to change the number of app fields
 
