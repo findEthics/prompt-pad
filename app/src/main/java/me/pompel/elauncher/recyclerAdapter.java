@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.UnderlineSpan;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,10 +13,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
-import java.util.Stack;
 
 
 public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppViewHolder> implements Filterable {
@@ -52,14 +48,6 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
         return true;
     }
 
-    private static LinkedList<Character> toCharacterList(String str) {
-        LinkedList<Character> list = new LinkedList<>();
-        for (char c : str.toCharArray()) {
-            list.add(c);
-        }
-        return list;
-    }
-
     @Override
     public Filter getFilter() {
         return new Filter() {
@@ -84,40 +72,23 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
                 appListFiltered = (ArrayList<App>)filterResults.values;
 
                 for (App app : appListFiltered) {
-                    // extract the app name characters which were matched by the filter
-                    // the match is case-insensitive and it's a fuzzy match
-                    Queue<Character> appNameQueue = toCharacterList(app.appName.toString().toLowerCase());
-                    Queue<Character> matchQueue = toCharacterList(charSequence.toString().toLowerCase());
-
-                    if (matchQueue.isEmpty() || appNameQueue.isEmpty()) {
-                        // GUARD: if either of the two queue are empty after construction
-                        Log.d("IMPOSSIBLE_STATE", "any of matchQueue and appNameQueue are empty after construction!");
-                        break;
-                    }
-                    Stack<Integer> matchedIndexes = new Stack<>();
-
-                    int i = 0;
-                    
-                    while (!appNameQueue.isEmpty() && !matchQueue.isEmpty()) {
-                        if (appNameQueue.peek() == matchQueue.peek()) {
-                            matchedIndexes.push(i);
-                            matchQueue.poll();
+                    String appName = app.appName.toString().toLowerCase();
+                    String query = charSequence.toString().toLowerCase();
+                    int queryIndex = 0;
+                    for (int appNameIndex = 0;
+                            appNameIndex < appName.length() && queryIndex < query.length();
+                            appNameIndex++) {
+                        if (appName.charAt(appNameIndex) == query.charAt(queryIndex)) {
+                            app.appName.setSpan(new UnderlineSpan(), appNameIndex, appNameIndex + 1,
+                                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            queryIndex++;
                         }
-
-                        appNameQueue.poll();
-                        i++;
                     }
 
                     // if an exact match, exit and click on it
-                    if (app.appName.length() == charSequence.length() && appNameQueue.isEmpty() && matchQueue.isEmpty()) {
+                    if (app.appName.length() == charSequence.length() && queryIndex == query.length()) {
                         listener.onClick(app);
                         break;
-                    }
-
-                    // apply the span to the matched characters
-                    for (int index : matchedIndexes) {
-                        // app.appName.setSpan(new StyleSpan(Typeface.BOLD), index, index + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        app.appName.setSpan(new UnderlineSpan(), index, index + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
                 }
 

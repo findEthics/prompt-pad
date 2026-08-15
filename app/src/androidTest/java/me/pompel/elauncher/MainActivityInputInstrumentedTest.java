@@ -1,0 +1,158 @@
+package me.pompel.elauncher;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.app.Activity;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.util.TypedValue;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
+import android.widget.TextView;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public class MainActivityInputInstrumentedTest {
+    @Test
+    public void enterPathsSubmitCommandsAndClearTheQuery() {
+        assertCommandSubmitted("!todo __instrument_physical_enter", KeyEvent.KEYCODE_ENTER);
+        assertCommandSubmitted("!todo __instrument_numpad_enter", KeyEvent.KEYCODE_NUMPAD_ENTER);
+
+        MainActivity activity = startActivity();
+        try {
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+                activity.findViewById(R.id.AppDrawer).setVisibility(View.VISIBLE);
+                EditText search = activity.findViewById(R.id.search);
+                search.setText("!todo __instrument_ime_done");
+                search.onEditorAction(EditorInfo.IME_ACTION_DONE);
+                assertEquals("", search.getText().toString());
+            });
+            assertTodoSaved("__instrument_ime_done");
+        } finally {
+            activity.finish();
+        }
+    }
+
+    @Test
+    public void commandTokensUseTheAccentColorInInputAndResults() {
+        MainActivity activity = startActivity();
+        try {
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+                activity.findViewById(R.id.AppDrawer).setVisibility(View.VISIBLE);
+                EditText search = activity.findViewById(R.id.search);
+                search.setText("!timer 1m");
+                assertCommandTokenAccent(search.getText(), 6, activity);
+            });
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+                RecyclerView results = activity.findViewById(R.id.recycler_view);
+                RecyclerView.ViewHolder holder = results.findViewHolderForAdapterPosition(0);
+                assertTrue(holder != null);
+                TextView title = holder.itemView.findViewById(R.id.command_title);
+                assertCommandTokenAccent(title.getText(), 6, activity);
+            });
+        } finally {
+            activity.finish();
+        }
+    }
+
+    @Test
+    public void allActivitiesUseTheSavedDarkTheme() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean hadPreference = preferences.contains("dark_mode_preference");
+        boolean previousValue = preferences.getBoolean("dark_mode_preference", false);
+        try {
+            preferences.edit().putBoolean("dark_mode_preference", true).commit();
+            assertDarkTheme(MainActivity.class);
+            assertDarkTheme(NotesActivity.class);
+            assertDarkTheme(TodosActivity.class);
+            assertDarkTheme(SettingsActivity.class);
+        } finally {
+            SharedPreferences.Editor editor = preferences.edit();
+            if (hadPreference) editor.putBoolean("dark_mode_preference", previousValue);
+            else editor.remove("dark_mode_preference");
+            editor.commit();
+        }
+    }
+
+    private static void assertCommandSubmitted(String command, int keyCode) {
+        MainActivity activity = startActivity();
+        try {
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+                EditText search = activity.findViewById(R.id.search);
+                search.setText(command);
+                assertTrue(search.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyCode)));
+                assertTrue(search.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, keyCode)));
+                assertEquals("", search.getText().toString());
+            });
+            assertTodoSaved(command.substring("!todo ".length()));
+        } finally {
+            activity.finish();
+        }
+    }
+
+    private static MainActivity startActivity() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        return (MainActivity) InstrumentationRegistry.getInstrumentation().startActivitySync(
+                new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+    }
+
+    private static void assertTodoSaved(String text) {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        TodosRepository repository = new TodosRepository(new SharedPreferencesKeyValueStore(
+                context.getSharedPreferences("command_data", Context.MODE_PRIVATE)));
+        for (Todo todo : repository.list()) {
+            if (text.equals(todo.getText())) {
+                repository.delete(todo.getId());
+                return;
+            }
+        }
+        fail("Expected test to-do was not saved: " + text);
+    }
+
+    private static void assertDarkTheme(Class<? extends Activity> activityClass) {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Activity activity = InstrumentationRegistry.getInstrumentation().startActivitySync(
+                new Intent(context, activityClass).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        try {
+            TypedValue background = new TypedValue();
+            assertTrue(activity.getTheme().resolveAttribute(android.R.attr.colorBackground,
+                    background, true));
+            int color = background.resourceId == 0 ? background.data
+                    : ContextCompat.getColor(activity, background.resourceId);
+            assertEquals(ContextCompat.getColor(activity, R.color.surface_dark), color);
+        } finally {
+            activity.finish();
+        }
+    }
+
+    private static void assertCommandTokenAccent(CharSequence text, int end, Context context) {
+        assertTrue(text instanceof Spanned);
+        int expected = ContextCompat.getColor(context, R.color.command_accent);
+        for (ForegroundColorSpan span : ((Spanned) text).getSpans(0, end,
+                ForegroundColorSpan.class)) {
+            if (((Spanned) text).getSpanStart(span) == 0
+                    && ((Spanned) text).getSpanEnd(span) == end) {
+                assertEquals(expected, span.getForegroundColor());
+                return;
+            }
+        }
+        fail("Expected an accent span for the command token");
+    }
+}

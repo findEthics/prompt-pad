@@ -39,7 +39,7 @@ public class CommandQueryClassifierTest {
         assertEquals(CommandQueryClassifier.Mode.COMMAND_SEARCH, result.getMode());
         assertEquals(CommandQueryClassifier.DisplayState.SUGGESTION, result.getDisplayState());
         assertEquals(Arrays.asList(CommandQueryClassifier.Command.TODO,
-                CommandQueryClassifier.Command.TODOS, CommandQueryClassifier.Command.TORCH),
+                CommandQueryClassifier.Command.TODOS),
                 result.getCommands());
         assertTrue(result.isDisplayOnly());
     }
@@ -54,7 +54,7 @@ public class CommandQueryClassifierTest {
         assertSuggestion("!note", CommandQueryClassifier.Command.NOTE);
         assertPreview("!notes", CommandQueryClassifier.Command.NOTES);
         assertSuggestion("!event", CommandQueryClassifier.Command.EVENT);
-        assertPreview("!torch", CommandQueryClassifier.Command.TORCH);
+        assertPreview("!t", CommandQueryClassifier.Command.TORCH);
         assertPreview("!camera", CommandQueryClassifier.Command.CAMERA);
         assertPreview("!HeLp", CommandQueryClassifier.Command.HELP);
     }
@@ -80,6 +80,9 @@ public class CommandQueryClassifierTest {
         assertTrue(result.getMessage().startsWith("Unknown command: zoom"));
         assertEquals(11, result.getCommands().size());
         assertTrue(result.getCommands().contains(CommandQueryClassifier.Command.HELP));
+
+        assertEquals(CommandQueryClassifier.DisplayState.UNKNOWN_COMMAND,
+                CommandQueryClassifier.classify("!torch").getDisplayState());
     }
 
     @Test

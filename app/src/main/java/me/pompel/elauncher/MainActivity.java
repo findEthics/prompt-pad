@@ -3,7 +3,6 @@ package me.pompel.elauncher;
 import androidx.annotation.NonNull;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -36,6 +35,7 @@ import android.transition.TransitionManager;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.GestureDetector;
+import android.view.inputmethod.EditorInfo;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.KeyEvent;
@@ -52,8 +52,6 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private static final String NUMBER_OF_APPS = "number_of_apps_preference";
-    private static final String DARK_MODE = "dark_mode_preference";
-
     private ArrayList<App> appList;
     private ArrayList<SpannableString> appNames;
     private EditText search;
@@ -68,6 +66,8 @@ public class MainActivity extends AppCompatActivity {
     private TodosRepository todosRepository;
     private CommandParser commandParser;
     private String pendingPermissionCommand;
+    private long searchRevision;
+    private boolean commandEnterDown;
 
     private static final int CONTACTS_PERMISSION_REQUEST = 1001;
     private static final int CAMERA_PERMISSION_REQUEST = 1002;
@@ -143,21 +143,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ThemePreference.apply(this);
 
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
-        // Get system dark mode as default
-        boolean systemDarkMode = (getResources().getConfiguration().uiMode & 
-                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-        boolean isDarkMode = prefs.getBoolean(DARK_MODE, systemDarkMode);
-
-        if (isDarkMode) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-            setTheme(R.style.AppTheme_InvertedDark);
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-            setTheme(R.style.AppTheme);
-        }
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
@@ -256,13 +244,24 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        search.setOnKeyListener((view, keyCode, event) -> {
+            if (keyCode != KeyEvent.KEYCODE_ENTER && keyCode != KeyEvent.KEYCODE_NUMPAD_ENTER) {
+                return false;
+            }
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                commandEnterDown = submitCommandIfApplicable();
+                return commandEnterDown;
+            }
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                boolean handled = commandEnterDown;
+                commandEnterDown = false;
+                return handled;
+            }
+            return false;
+        });
         search.setOnEditorActionListener((view, actionId, event) -> {
-            boolean enterPressed = event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
-                    && event.getAction() == KeyEvent.ACTION_DOWN;
-            if (search.getText().length() > 0 && search.getText().charAt(0) == '!'
-                    && (actionId != 0 || enterPressed)) {
-                submitCommand();
-                return true;
+            if (event == null && actionId == EditorInfo.IME_ACTION_DONE) {
+                return submitCommandIfApplicable();
             }
             return false;
         });
@@ -277,6 +276,8 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                searchRevision++;
+                CommandAdapter.styleCommandToken(MainActivity.this, search.getText());
                 CommandQueryClassifier.Result result = CommandQueryClassifier.classify(charSequence.toString());
                 if (result.getMode() == CommandQueryClassifier.Mode.COMMAND_SEARCH) {
                     // Keep delayed app-filter results from auto-launching while commands are shown.
@@ -365,7 +366,16 @@ public class MainActivity extends AppCompatActivity {
             }
             return;
         }
-        executeCommand(parsed.getCommand());
+        search.setText("");
+        executeCommand(parsed.getCommand(), query);
+    }
+
+    private boolean submitCommandIfApplicable() {
+        if (search.getText().length() == 0 || search.getText().charAt(0) != '!') {
+            return false;
+        }
+        submitCommand();
+        return true;
     }
 
     private boolean showContactPreview(String query, CommandQueryClassifier.Result result) {
@@ -428,7 +438,7 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
-    private void executeCommand(CommandParser.Command command) {
+    private void executeCommand(CommandParser.Command command, String query) {
         switch (command.getType()) {
             case HELP:
                 if (recyclerView.getAdapter() != commandAdapter) {
@@ -437,10 +447,10 @@ public class MainActivity extends AppCompatActivity {
                 commandAdapter.submit(CommandQueryClassifier.classify("!"));
                 return;
             case CALL:
-                executeCall((CommandParser.CallCommand) command);
+                executeCall((CommandParser.CallCommand) command, query);
                 return;
             case TEXT:
-                executeText((CommandParser.TextCommand) command);
+                executeText((CommandParser.TextCommand) command, query);
                 return;
             case TIMER:
                 CommandParser.TimerCommand timer = (CommandParser.TimerCommand) command;
@@ -469,7 +479,7 @@ public class MainActivity extends AppCompatActivity {
                         "Calendar event form opened.");
                 return;
             case TORCH:
-                toggleTorch();
+                toggleTorch(query, searchRevision);
                 return;
             case CAMERA:
                 launchCommandIntent(CommandIntentFactory.camera(),
@@ -478,8 +488,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void executeCall(CommandParser.CallCommand command) {
-        executeRecipient(command.getRecipient(), new ContactNumberAction() {
+    private void executeCall(CommandParser.CallCommand command, String query) {
+        executeRecipient(command.getRecipient(), query, new ContactNumberAction() {
             @Override
             public void open(String number) {
                 launchCommandIntent(CommandIntentFactory.dial(number),
@@ -488,8 +498,8 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void executeText(final CommandParser.TextCommand command) {
-        executeRecipient(command.getRecipient(), new ContactNumberAction() {
+    private void executeText(final CommandParser.TextCommand command, String query) {
+        executeRecipient(command.getRecipient(), query, new ContactNumberAction() {
             @Override
             public void open(String number) {
                 launchCommandIntent(CommandIntentFactory.composeText(number, command.getMessage()),
@@ -499,13 +509,14 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void executeRecipient(CommandParser.Recipient recipient, ContactNumberAction action) {
+    private void executeRecipient(CommandParser.Recipient recipient, String query,
+                                  ContactNumberAction action) {
         if (recipient.getKind() == CommandParser.Recipient.Kind.PHONE_NUMBER) {
             action.open(recipient.getValue());
             return;
         }
         if (!contactsResolver.hasPermission()) {
-            requestContactsFor(search.getText().toString());
+            requestContactsFor(query);
             return;
         }
         List<ContactsResolver.Contact> contacts = contactsResolver.contactsFor(recipient.getValue());
@@ -528,21 +539,21 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void toggleTorch() {
+    private void toggleTorch(String query, long queryRevision) {
         showCommandStatus("Checking torch", "Reading the rear torch state.");
         torchController.toggle(new TorchController.Callback() {
             @Override
             public void onResult(final TorchController.Result result) {
                 runOnUiThread(() -> {
-                    if ("!torch".equalsIgnoreCase(search.getText().toString().trim())) {
-                        showTorchResult(result);
+                    if (queryRevision == searchRevision) {
+                        showTorchResult(result, query);
                     }
                 });
             }
         });
     }
 
-    private void showTorchResult(TorchController.Result result) {
+    private void showTorchResult(TorchController.Result result, String query) {
         switch (result) {
             case ON:
                 showCommandStatus("Torch on", "Rear torch enabled.");
@@ -551,7 +562,7 @@ public class MainActivity extends AppCompatActivity {
                 showCommandStatus("Torch off", "Rear torch disabled.");
                 return;
             case PERMISSION_DENIED:
-                requestCameraForTorch();
+                requestCameraForTorch(query);
                 return;
             case UNAVAILABLE:
                 showCommandStatus("Torch unavailable", "No rear torch is available.");
@@ -560,14 +571,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void launchCommandIntent(Intent intent, String unavailableMessage, String confirmationMessage) {
-        if (intent.resolveActivity(getPackageManager()) == null) {
-            showCommandStatus("Unavailable", unavailableMessage);
-            return;
-        }
         try {
             startActivity(intent);
             showCommandStatus("Ready", confirmationMessage);
         } catch (ActivityNotFoundException | SecurityException exception) {
+            Log.w(MainActivity.class.getSimpleName(), "Unable to launch command intent", exception);
             showCommandStatus("Unavailable", unavailableMessage);
         }
     }
@@ -578,8 +586,8 @@ public class MainActivity extends AppCompatActivity {
                 "Contacts permission is required for named recipients.");
     }
 
-    private void requestCameraForTorch() {
-        pendingPermissionCommand = search.getText().toString();
+    private void requestCameraForTorch(String query) {
+        pendingPermissionCommand = query;
         requestPermission(Manifest.permission.CAMERA, CAMERA_PERMISSION_REQUEST,
                 "Camera permission is required for torch.");
     }

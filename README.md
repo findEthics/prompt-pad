@@ -42,7 +42,7 @@ Titan reserves an explicit command mode in the app-drawer search field. This sec
 | Note | `!note <text>` | Save a timestamped local note |
 | Notes | `!notes` | Open the local notes Activity |
 | Event | `!event <date> <time> <title>` | Open a prefilled Calendar event; never insert it directly |
-| Torch | `!torch` | Toggle the rear torch only when available and permitted |
+| Torch | `!t` | Toggle the rear torch only when available and permitted |
 | Camera | `!camera` | Open the installed system camera |
 
 ### Parsing and result states

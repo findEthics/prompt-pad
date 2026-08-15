@@ -22,6 +22,7 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ThemePreference.apply(this);
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.settings_activity);
@@ -104,10 +105,7 @@ public class SettingsActivity extends AppCompatActivity {
                 
                 // Only set the visual state if the preference hasn't been explicitly set
                 if (!prefs.contains("dark_mode_preference")) {
-                    boolean systemDarkMode = (getResources().getConfiguration().uiMode & 
-                            android.content.res.Configuration.UI_MODE_NIGHT_MASK) == 
-                            android.content.res.Configuration.UI_MODE_NIGHT_YES;
-                    darkModePreference.setChecked(systemDarkMode);
+                    darkModePreference.setChecked(ThemePreference.isDarkMode(requireContext()));
                 }
             }
         }

@@ -24,6 +24,7 @@ public final class NotesActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ThemePreference.apply(this);
         setTitle("Notes");
         repository = new NotesRepository(new SharedPreferencesKeyValueStore(
                 getSharedPreferences("command_data", MODE_PRIVATE)));

@@ -43,7 +43,6 @@ public final class ContactsResolver implements CommandParser.ContactResolver {
         }
 
         int bestLength = -1;
-        List<Contact> bestMatches = Collections.emptyList();
         for (int end = input.length(); end > 0; end--) {
             if (end != input.length() && !Character.isWhitespace(input.charAt(end))) {
                 continue;
@@ -55,12 +54,11 @@ public final class ContactsResolver implements CommandParser.ContactResolver {
             List<Contact> matches = matchingContacts(prefix);
             if (!matches.isEmpty()) {
                 bestLength = prefix.length();
-                bestMatches = matches;
                 break;
             }
         }
         return bestLength == -1 ? null
-                : new CommandParser.ContactMatch(bestMatches.get(0).getDisplayName(), bestLength);
+                : new CommandParser.ContactMatch(bestLength);
     }
 
     /** Returns every phone row for an exact contact name, or every matching name for a prefix. */

@@ -77,8 +77,8 @@ public final class CommandParser {
         if ("event".equals(name)) {
             return parseEvent(parts.rest);
         }
-        if ("torch".equals(name)) {
-            return parseNoArguments(parts.rest, Type.TORCH, "!torch");
+        if ("t".equals(name)) {
+            return parseNoArguments(parts.rest, Type.TORCH, "!t");
         }
         if ("camera".equals(name)) {
             return parseNoArguments(parts.rest, Type.CAMERA, "!camera");
@@ -252,27 +252,15 @@ public final class CommandParser {
             return error(ErrorCode.PAST_EVENT, "Event start time must be in the future.",
                     "!event <date> <time> <title>");
         }
-        return ParseResult.command(new EventCommand(date.toIsoDate(), timePart.first, timePart.rest,
-                startMillis, DEFAULT_EVENT_DURATION_MINUTES, timeZone.getID()));
+        return ParseResult.command(new EventCommand(timePart.rest, startMillis,
+                DEFAULT_EVENT_DURATION_MINUTES));
     }
 
     private ParseResult parseNoArguments(String arguments, Type type, String syntax) {
         if (arguments.length() != 0) {
             return error(ErrorCode.UNEXPECTED_ARGUMENT, syntax + " does not take arguments.", syntax);
         }
-        if (type == Type.HELP) {
-            return ParseResult.command(new HelpCommand());
-        }
-        if (type == Type.TORCH) {
-            return ParseResult.command(new TorchCommand());
-        }
-        if (type == Type.NOTES) {
-            return ParseResult.command(new NotesCommand());
-        }
-        if (type == Type.TODOS) {
-            return ParseResult.command(new TodosCommand());
-        }
-        return ParseResult.command(new CameraCommand());
+        return ParseResult.command(new ZeroPayloadCommand(type));
     }
 
     private ContactMatch resolveContact(String input) {
@@ -508,7 +496,6 @@ public final class CommandParser {
     public static final class Recipient {
         public enum Kind {
             PHONE_NUMBER,
-            CONTACT,
             CONTACT_PREFIX
         }
 
@@ -522,10 +509,6 @@ public final class CommandParser {
 
         public static Recipient phoneNumber(String value) {
             return new Recipient(Kind.PHONE_NUMBER, value);
-        }
-
-        public static Recipient contact(String value) {
-            return new Recipient(Kind.CONTACT, value);
         }
 
         public static Recipient contactPrefix(String value) {
@@ -542,22 +525,13 @@ public final class CommandParser {
     }
 
     public static final class ContactMatch {
-        private final String displayName;
         private final int prefixLength;
 
-        public ContactMatch(String displayName, int prefixLength) {
-            if (displayName == null || displayName.trim().length() == 0) {
-                throw new IllegalArgumentException("displayName must not be blank");
-            }
+        public ContactMatch(int prefixLength) {
             if (prefixLength <= 0) {
                 throw new IllegalArgumentException("prefixLength must be greater than zero");
             }
-            this.displayName = displayName;
             this.prefixLength = prefixLength;
-        }
-
-        public String getDisplayName() {
-            return displayName;
         }
 
         public int getPrefixLength() {
@@ -662,55 +636,20 @@ public final class CommandParser {
         }
     }
 
-    public static final class TodosCommand implements Command {
-        private TodosCommand() {
-        }
-
-        @Override
-        public Type getType() {
-            return Type.TODOS;
-        }
-    }
-
-    public static final class NotesCommand implements Command {
-        private NotesCommand() {
-        }
-
-        @Override
-        public Type getType() {
-            return Type.NOTES;
-        }
-    }
-
     public static final class EventCommand implements Command {
-        private final String date;
-        private final String time;
         private final String title;
         private final long startTimeMillis;
         private final int durationMinutes;
-        private final String timeZoneId;
 
-        private EventCommand(String date, String time, String title, long startTimeMillis,
-                             int durationMinutes, String timeZoneId) {
-            this.date = date;
-            this.time = time;
+        private EventCommand(String title, long startTimeMillis, int durationMinutes) {
             this.title = title;
             this.startTimeMillis = startTimeMillis;
             this.durationMinutes = durationMinutes;
-            this.timeZoneId = timeZoneId;
         }
 
         @Override
         public Type getType() {
             return Type.EVENT;
-        }
-
-        public String getDate() {
-            return date;
-        }
-
-        public String getTime() {
-            return time;
         }
 
         public String getTitle() {
@@ -725,38 +664,18 @@ public final class CommandParser {
             return durationMinutes;
         }
 
-        public String getTimeZoneId() {
-            return timeZoneId;
-        }
     }
 
-    public static final class TorchCommand implements Command {
-        private TorchCommand() {
+    public static final class ZeroPayloadCommand implements Command {
+        private final Type type;
+
+        private ZeroPayloadCommand(Type type) {
+            this.type = type;
         }
 
         @Override
         public Type getType() {
-            return Type.TORCH;
-        }
-    }
-
-    public static final class CameraCommand implements Command {
-        private CameraCommand() {
-        }
-
-        @Override
-        public Type getType() {
-            return Type.CAMERA;
-        }
-    }
-
-    public static final class HelpCommand implements Command {
-        private HelpCommand() {
-        }
-
-        @Override
-        public Type getType() {
-            return Type.HELP;
+            return type;
         }
     }
 
@@ -811,9 +730,6 @@ public final class CommandParser {
             this.day = day;
         }
 
-        private String toIsoDate() {
-            return String.format(Locale.ROOT, "%04d-%02d-%02d", year, month, day);
-        }
     }
 
     private static final class SystemClock implements Clock {

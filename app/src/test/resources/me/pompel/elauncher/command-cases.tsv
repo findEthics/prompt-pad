@@ -64,11 +64,11 @@ event-past-time	!event today 09:00 Project review	INPUT_CHANGED	PAST_EVENT	COMMA
 event-missing-title	!event today 14:30	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	EVENT	date=today;time=14:30;duration=30m;timezone=local	SHOW_SYNTAX	Use !event <date> <time> <title>
 event-submit	!event tomorrow 14:30 Project review	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	EVENT	date=tomorrow;time=14:30;title=Project review;duration=30m;timezone=local	OPEN_CALENDAR	Open prefilled Calendar event without inserting
 event-handler-unavailable	!event tomorrow 14:30 Project review	SUBMIT	CALENDAR_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	EVENT	date=tomorrow;time=14:30;title=Project review;duration=30m;timezone=local	SHOW_UNAVAILABLE	No Calendar app is available
-torch-preview	!torch	INPUT_CHANGED	TORCH_AVAILABLE	COMMAND_SEARCH	PREVIEW	TORCH	-	NONE	Torch command is ready to submit
-torch-turn-on	!torch	SUBMIT	TORCH_OFF	COMMAND_SEARCH	SUCCESS	TORCH	-	TOGGLE_TORCH	Report torch on
-torch-turn-off	!torch	SUBMIT	TORCH_ON	COMMAND_SEARCH	SUCCESS	TORCH	-	TOGGLE_TORCH	Report torch off
-torch-unavailable	!torch	SUBMIT	TORCH_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	TORCH	-	SHOW_UNAVAILABLE	No rear torch is available
-torch-denied	!torch	SUBMIT	CAMERA_DENIED	COMMAND_SEARCH	PERMISSION_DENIED	TORCH	-	OFFER_SETTINGS	Camera permission is required for torch
+torch-preview	!t	INPUT_CHANGED	TORCH_AVAILABLE	COMMAND_SEARCH	PREVIEW	TORCH	-	NONE	Torch command is ready to submit
+torch-turn-on	!t	SUBMIT	TORCH_OFF	COMMAND_SEARCH	SUCCESS	TORCH	-	TOGGLE_TORCH	Report torch on
+torch-turn-off	!t	SUBMIT	TORCH_ON	COMMAND_SEARCH	SUCCESS	TORCH	-	TOGGLE_TORCH	Report torch off
+torch-unavailable	!t	SUBMIT	TORCH_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	TORCH	-	SHOW_UNAVAILABLE	No rear torch is available
+torch-denied	!t	SUBMIT	CAMERA_DENIED	COMMAND_SEARCH	PERMISSION_DENIED	TORCH	-	OFFER_SETTINGS	Camera permission is required for torch
 camera-preview	!camera	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	CAMERA	-	NONE	Camera command is ready to submit
 camera-submit	!camera	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	CAMERA	-	OPEN_CAMERA	Open the system camera
 camera-handler-unavailable	!camera	SUBMIT	CAMERA_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	CAMERA	-	SHOW_UNAVAILABLE	No Camera app is available

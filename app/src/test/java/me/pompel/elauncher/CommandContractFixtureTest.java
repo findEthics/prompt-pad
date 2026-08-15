@@ -163,9 +163,9 @@ public class CommandContractFixtureTest {
                 }
 
                 if ("TORCH".equals(fields[6]) && "INPUT_CHANGED".equals(fields[2])) {
-                    assertEquals("Typing torch must not toggle it at line " + lineNumber,
+                    assertEquals("Typing !t must not toggle it at line " + lineNumber,
                             "PREVIEW", fields[5]);
-                    assertEquals("Typing torch must not have a side effect at line " + lineNumber,
+                    assertEquals("Typing !t must not have a side effect at line " + lineNumber,
                             "NONE", fields[8]);
                     hasTorchTypingCase = true;
                 }
@@ -209,7 +209,7 @@ public class CommandContractFixtureTest {
                     "CALL_PLUS_SUBMIT", "TEXT_BARE_INPUT_CHANGED", "TEXT_BARE_SUBMIT",
                     "TEXT_PLUS_INPUT_CHANGED", "TEXT_PLUS_SUBMIT"
             ), rawRecipientFallbacks);
-            assertTrue("Fixture must cover typing !torch before submission", hasTorchTypingCase);
+            assertTrue("Fixture must cover typing !t before submission", hasTorchTypingCase);
             assertTrue("Fixture must distinguish torch on", hasTorchOnCase);
             assertTrue("Fixture must distinguish torch off", hasTorchOffCase);
             assertTrue("Fixture must cover a one-hour timer", hasOneHourTimerCase);

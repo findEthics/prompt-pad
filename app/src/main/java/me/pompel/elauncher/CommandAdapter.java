@@ -1,5 +1,11 @@
 package me.pompel.elauncher;
 
+import android.content.Context;
+import android.content.res.TypedArray;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -81,7 +87,7 @@ public class CommandAdapter extends RecyclerView.Adapter<CommandAdapter.CommandV
     @Override
     public void onBindViewHolder(@NonNull CommandViewHolder holder, int position) {
         Row row = rows.get(position);
-        holder.title.setText(row.title);
+        holder.title.setText(styledCommandText(holder.title.getContext(), row.title));
         holder.detail.setText(row.detail);
         holder.detail.setVisibility(row.detail.isEmpty() ? View.GONE : View.VISIBLE);
         holder.itemView.setOnClickListener(null);
@@ -92,6 +98,30 @@ public class CommandAdapter extends RecyclerView.Adapter<CommandAdapter.CommandV
         } else if (row.action == RowAction.OPEN_SETTINGS) {
             holder.itemView.setOnClickListener(view -> listener.onOpenSettings());
         }
+    }
+
+    static void styleCommandToken(Context context, Spannable text) {
+        for (ForegroundColorSpan span : text.getSpans(0, text.length(), ForegroundColorSpan.class)) {
+            text.removeSpan(span);
+        }
+        if (text.length() == 0 || text.charAt(0) != '!') {
+            return;
+        }
+        int end = 1;
+        while (end < text.length() && !Character.isWhitespace(text.charAt(end))) {
+            end++;
+        }
+        try (TypedArray attributes = context.obtainStyledAttributes(
+                new int[]{androidx.appcompat.R.attr.colorAccent})) {
+            text.setSpan(new ForegroundColorSpan(attributes.getColor(0, 0)), 0, end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
+    private static CharSequence styledCommandText(Context context, String text) {
+        SpannableString styled = new SpannableString(text);
+        styleCommandToken(context, styled);
+        return styled;
     }
 
     @Override

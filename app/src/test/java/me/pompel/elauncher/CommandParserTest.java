@@ -16,10 +16,18 @@ public class CommandParserTest {
     public void parsesEverySupportedArgumentFreeCommand() {
         CommandParser parser = parserAt("2026-08-15 10:00");
 
-        assertCommand(parser.parse("!help"), CommandParser.Type.HELP, CommandParser.HelpCommand.class);
-        assertCommand(parser.parse("!torch"), CommandParser.Type.TORCH, CommandParser.TorchCommand.class);
-        assertCommand(parser.parse("!camera"), CommandParser.Type.CAMERA, CommandParser.CameraCommand.class);
-        assertError(parser.parse("!torch now"), CommandParser.ErrorCode.UNEXPECTED_ARGUMENT);
+        assertCommand(parser.parse("!help"), CommandParser.Type.HELP,
+                CommandParser.ZeroPayloadCommand.class);
+        assertCommand(parser.parse("!todos"), CommandParser.Type.TODOS,
+                CommandParser.ZeroPayloadCommand.class);
+        assertCommand(parser.parse("!notes"), CommandParser.Type.NOTES,
+                CommandParser.ZeroPayloadCommand.class);
+        assertCommand(parser.parse("!t"), CommandParser.Type.TORCH,
+                CommandParser.ZeroPayloadCommand.class);
+        assertCommand(parser.parse("!camera"), CommandParser.Type.CAMERA,
+                CommandParser.ZeroPayloadCommand.class);
+        assertError(parser.parse("!t now"), CommandParser.ErrorCode.UNEXPECTED_ARGUMENT);
+        assertError(parser.parse("!torch"), CommandParser.ErrorCode.UNKNOWN_COMMAND);
     }
 
     @Test
@@ -75,7 +83,7 @@ public class CommandParserTest {
                     @Override
                     public CommandParser.ContactMatch resolveLongestPrefix(String input) {
                         if (input.toLowerCase().startsWith("ada lovelace")) {
-                            return new CommandParser.ContactMatch("Ada Lovelace", 12);
+                            return new CommandParser.ContactMatch(12);
                         }
                         return null;
                     }
@@ -117,13 +125,10 @@ public class CommandParserTest {
         CommandParser.EventCommand iso = (CommandParser.EventCommand) parser
                 .parse("!event 2026-08-16 14:30 Project review").getCommand();
 
-        assertEquals("2026-08-15", today.getDate());
-        assertEquals("2026-08-16", tomorrow.getDate());
-        assertEquals("2026-08-16", iso.getDate());
-        assertEquals("14:30", iso.getTime());
         assertEquals("Project review", iso.getTitle());
         assertEquals(CommandParser.DEFAULT_EVENT_DURATION_MINUTES, iso.getDurationMinutes());
-        assertEquals("UTC", iso.getTimeZoneId());
+        assertTrue(today.getStartTimeMillis() > new FixedClock("2026-08-15 10:00").currentTimeMillis());
+        assertTrue(tomorrow.getStartTimeMillis() > new FixedClock("2026-08-15 10:00").currentTimeMillis());
         assertTrue(iso.getStartTimeMillis() > new FixedClock("2026-08-15 10:00").currentTimeMillis());
     }
 

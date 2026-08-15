@@ -12,7 +12,7 @@
         <shape android:shape="rectangle" >
             <stroke
                 android:width="0.5dp"
-                android:color="?attr/colorPrimary" />
+                android:color="?attr/colorControlNormal" />
         </shape>
     </item>
 </layer-list>

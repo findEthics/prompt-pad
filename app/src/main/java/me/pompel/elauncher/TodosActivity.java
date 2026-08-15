@@ -23,6 +23,7 @@ public final class TodosActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ThemePreference.apply(this);
         setTitle("To-dos");
         repository = new TodosRepository(new SharedPreferencesKeyValueStore(
                 getSharedPreferences("command_data", MODE_PRIVATE)));
