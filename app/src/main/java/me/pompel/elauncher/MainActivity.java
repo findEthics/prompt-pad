@@ -685,8 +685,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public Intent getLastLauncherIntent() {
-        ResolveInfo[] launcherResolveInfos = getLaunchersResolveInfos().toArray(new ResolveInfo[0]);
-        ResolveInfo lastLauncher = launcherResolveInfos[launcherResolveInfos.length-1];
+        List<ResolveInfo> launcherResolveInfos = getLaunchersResolveInfos();
+        if (launcherResolveInfos.isEmpty()) {
+            return null;
+        }
+        ResolveInfo lastLauncher = launcherResolveInfos.get(launcherResolveInfos.size() - 1);
 
         if (lastLauncher != null) {
             String packageName = lastLauncher.activityInfo.packageName;
