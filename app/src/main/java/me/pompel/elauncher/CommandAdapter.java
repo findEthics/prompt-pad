@@ -11,31 +11,38 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Renders command-search feedback without attaching any execution side effects. */
+/** Renders command-search feedback; callers decide what an explicit row tap does. */
 public class CommandAdapter extends RecyclerView.Adapter<CommandAdapter.CommandViewHolder> {
     private final List<Row> rows = new ArrayList<>();
+    private final Listener listener;
+
+    public CommandAdapter(Listener listener) {
+        this.listener = listener;
+    }
 
     public void submit(CommandQueryClassifier.Result result) {
         rows.clear();
         switch (result.getDisplayState()) {
             case COMMAND_HELP:
-                rows.add(new Row(result.getMessage(), ""));
+                rows.add(new Row(result.getMessage(), "", null, RowAction.NONE));
                 addCommands(result.getCommands());
                 break;
             case SUGGESTION:
-                rows.add(new Row(result.getMessage(), ""));
+                rows.add(new Row(result.getMessage(), "", null, RowAction.NONE));
                 addCommands(result.getCommands());
                 break;
             case PREVIEW:
                 String query = "!" + result.getCommand().getName();
                 if (!result.getArguments().isEmpty()) query += " " + result.getArguments();
-                rows.add(new Row(query, result.getMessage() + "\n" + result.getSyntaxHint()));
+                rows.add(new Row(query, result.getMessage() + "\n" + result.getSyntaxHint(), query,
+                        RowAction.SUBMIT));
                 break;
             case VALIDATION_ERROR:
-                rows.add(new Row(result.getMessage(), result.getSyntaxHint()));
+                rows.add(new Row(result.getMessage(), result.getSyntaxHint(), null, RowAction.NONE));
                 break;
             case UNKNOWN_COMMAND:
-                rows.add(new Row(result.getMessage(), "Type one of these commands:"));
+                rows.add(new Row(result.getMessage(), "Type one of these commands:", null,
+                        RowAction.NONE));
                 addCommands(result.getCommands());
                 break;
             case APP_RESULTS:
@@ -44,9 +51,22 @@ public class CommandAdapter extends RecyclerView.Adapter<CommandAdapter.CommandV
         notifyDataSetChanged();
     }
 
+    public void showStatus(String title, String detail) {
+        rows.clear();
+        rows.add(new Row(title, detail, null, RowAction.NONE));
+        notifyDataSetChanged();
+    }
+
+    public void showPermissionStatus(String title, String detail) {
+        rows.clear();
+        rows.add(new Row(title, detail, null, RowAction.OPEN_SETTINGS));
+        notifyDataSetChanged();
+    }
+
     private void addCommands(List<CommandQueryClassifier.Command> commands) {
         for (CommandQueryClassifier.Command command : commands) {
-            rows.add(new Row("!" + command.getName(), command.getSyntaxHint()));
+            String query = "!" + command.getName();
+            rows.add(new Row(query, command.getSyntaxHint(), query + " ", RowAction.EDIT));
         }
     }
 
@@ -64,6 +84,14 @@ public class CommandAdapter extends RecyclerView.Adapter<CommandAdapter.CommandV
         holder.title.setText(row.title);
         holder.detail.setText(row.detail);
         holder.detail.setVisibility(row.detail.isEmpty() ? View.GONE : View.VISIBLE);
+        holder.itemView.setOnClickListener(null);
+        if (row.action == RowAction.EDIT) {
+            holder.itemView.setOnClickListener(view -> listener.onEdit(row.query));
+        } else if (row.action == RowAction.SUBMIT) {
+            holder.itemView.setOnClickListener(view -> listener.onSubmit(row.query));
+        } else if (row.action == RowAction.OPEN_SETTINGS) {
+            holder.itemView.setOnClickListener(view -> listener.onOpenSettings());
+        }
     }
 
     @Override
@@ -82,13 +110,32 @@ public class CommandAdapter extends RecyclerView.Adapter<CommandAdapter.CommandV
         }
     }
 
+    public interface Listener {
+        void onEdit(String query);
+
+        void onSubmit(String query);
+
+        void onOpenSettings();
+    }
+
+    private enum RowAction {
+        NONE,
+        EDIT,
+        SUBMIT,
+        OPEN_SETTINGS
+    }
+
     private static class Row {
         private final String title;
         private final String detail;
+        private final String query;
+        private final RowAction action;
 
-        Row(String title, String detail) {
+        Row(String title, String detail, String query, RowAction action) {
             this.title = title;
             this.detail = detail;
+            this.query = query;
+            this.action = action;
         }
     }
 }

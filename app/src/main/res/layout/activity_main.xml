@@ -46,6 +46,7 @@
             android:background="@drawable/search_bar_background"
             android:ems="10"
             android:fontFamily="sans-serif-light"
+            android:imeOptions="actionDone"
             android:inputType="text"
             android:lines="1"
             android:textAlignment="center"

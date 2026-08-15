@@ -12,7 +12,9 @@ import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.annotation.SuppressLint;
+import android.Manifest;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -22,6 +24,7 @@ import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.provider.Settings;
@@ -36,6 +39,7 @@ import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.KeyEvent;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -57,11 +61,22 @@ public class MainActivity extends AppCompatActivity {
     private SharedPreferences prefs;
 
     private recyclerAdapter adapter;
+    private RecyclerView recyclerView;
+    private CommandAdapter commandAdapter;
+    private ContactsResolver contactsResolver;
+    private TorchController torchController;
+    private NotesRepository notesRepository;
+    private TodosRepository todosRepository;
+    private CommandParser commandParser;
+    private String pendingPermissionCommand;
     private boolean isBackGesture = false;
     private float startX = 0f;
     private float startY = 0f;
     private boolean isLeftEdge = false;
     private boolean isRightEdge = false;
+
+    private static final int CONTACTS_PERMISSION_REQUEST = 1001;
+    private static final int CAMERA_PERMISSION_REQUEST = 1002;
 
     private void loadApps() {
         appList.clear();
@@ -225,8 +240,15 @@ public class MainActivity extends AppCompatActivity {
         appList = new ArrayList<>();
         appNames = new ArrayList<>();
         loadApps();
+        search = findViewById(R.id.search);
+        contactsResolver = new ContactsResolver(this);
+        torchController = new TorchController(this);
+        SharedPreferences commandPreferences = getSharedPreferences("command_data", MODE_PRIVATE);
+        notesRepository = new NotesRepository(new SharedPreferencesKeyValueStore(commandPreferences));
+        todosRepository = new TodosRepository(new SharedPreferencesKeyValueStore(commandPreferences));
+        commandParser = new CommandParser(contactsResolver);
 
-        RecyclerView recyclerView = findViewById(R.id.recycler_view);
+        recyclerView = findViewById(R.id.recycler_view);
         adapter = new recyclerAdapter(appList, new recyclerAdapter.RecyclerViewClickListener() {
             @Override
             public void onClick(App app) {
@@ -240,7 +262,27 @@ public class MainActivity extends AppCompatActivity {
                 openAppWithIntent(intent, false);
             }
         });
-        CommandAdapter commandAdapter = new CommandAdapter();
+        commandAdapter = new CommandAdapter(new CommandAdapter.Listener() {
+            @Override
+            public void onEdit(String query) {
+                search.setText(query);
+                search.setSelection(query.length());
+            }
+
+            @Override
+            public void onSubmit(String query) {
+                if (!query.equals(search.getText().toString())) {
+                    search.setText(query);
+                    search.setSelection(query.length());
+                }
+                submitCommand();
+            }
+
+            @Override
+            public void onOpenSettings() {
+                openAppSettings("Allow the needed permission in Settings.");
+            }
+        });
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
@@ -273,7 +315,16 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        search = findViewById(R.id.search);
+        search.setOnEditorActionListener((view, actionId, event) -> {
+            boolean enterPressed = event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                    && event.getAction() == KeyEvent.ACTION_DOWN;
+            if (search.getText().length() > 0 && search.getText().charAt(0) == '!'
+                    && (actionId != 0 || enterPressed)) {
+                submitCommand();
+                return true;
+            }
+            return false;
+        });
         search.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -292,7 +343,9 @@ public class MainActivity extends AppCompatActivity {
                     if (recyclerView.getAdapter() != commandAdapter) {
                         recyclerView.setAdapter(commandAdapter);
                     }
-                    commandAdapter.submit(result);
+                    if (!showContactPreview(charSequence.toString(), result)) {
+                        commandAdapter.submit(result);
+                    }
                 } else {
                     if (recyclerView.getAdapter() != adapter) {
                         recyclerView.setAdapter(adapter);
@@ -348,6 +401,325 @@ public class MainActivity extends AppCompatActivity {
 
         new SwipeListener(homescreen);
 
+    }
+
+    private void submitCommand() {
+        String query = search.getText().toString();
+        if (CommandQueryClassifier.classify(query).getMode()
+                != CommandQueryClassifier.Mode.COMMAND_SEARCH) {
+            return;
+        }
+
+        if (isNamedTextCommandWithoutContacts(query)) {
+            requestContactsFor(query);
+            return;
+        }
+
+        CommandParser.ParseResult parsed = commandParser.parse(query);
+        if (!parsed.isSuccess()) {
+            if (parsed.getError().getCode() == CommandParser.ErrorCode.CONTACT_RESOLUTION_REQUIRED) {
+                requestContactsFor(query);
+            } else {
+                showCommandStatus(parsed.getError().getMessage(), parsed.getError().getSyntax());
+            }
+            return;
+        }
+        executeCommand(parsed.getCommand());
+    }
+
+    private boolean showContactPreview(String query, CommandQueryClassifier.Result result) {
+        if (result.getDisplayState() != CommandQueryClassifier.DisplayState.PREVIEW
+                || (result.getCommand() != CommandQueryClassifier.Command.CALL
+                && result.getCommand() != CommandQueryClassifier.Command.TEXT)) {
+            return false;
+        }
+        CommandParser.ParseResult parsed = commandParser.parse(query);
+        if (!parsed.isSuccess()) {
+            if (isNamedTextCommandWithoutContacts(query)) {
+                showCommandPermissionStatus("Contacts permission required",
+                        "Allow Contacts to use a named text recipient.");
+                return true;
+            }
+            if (contactsResolver.hasPermission()) {
+                showCommandStatus(parsed.getError().getMessage(), parsed.getError().getSyntax());
+                return true;
+            }
+            return false;
+        }
+        CommandParser.Recipient recipient = recipientFor(parsed.getCommand());
+        if (recipient == null || recipient.getKind() == CommandParser.Recipient.Kind.PHONE_NUMBER) {
+            return false;
+        }
+        if (!contactsResolver.hasPermission()) {
+            showCommandPermissionStatus("Contacts permission required",
+                    "Allow Contacts to use a named recipient.");
+            return true;
+        }
+        List<ContactsResolver.Contact> contacts = contactsResolver.contactsFor(recipient.getValue());
+        if (contacts.isEmpty()) {
+            showCommandStatus("No matching contact", "Use a phone number or check the contact name.");
+            return true;
+        }
+        if (contacts.size() > 1) {
+            showCommandStatus("Contact choice required", "Submit to choose a matching contact number.");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isNamedTextCommandWithoutContacts(String query) {
+        if (contactsResolver.hasPermission()) {
+            return false;
+        }
+        CommandParser.ParseResult withoutContacts = new CommandParser().parse(query);
+        return !withoutContacts.isSuccess()
+                && withoutContacts.getError().getCode()
+                == CommandParser.ErrorCode.CONTACT_RESOLUTION_REQUIRED;
+    }
+
+    private static CommandParser.Recipient recipientFor(CommandParser.Command command) {
+        if (command instanceof CommandParser.CallCommand) {
+            return ((CommandParser.CallCommand) command).getRecipient();
+        }
+        if (command instanceof CommandParser.TextCommand) {
+            return ((CommandParser.TextCommand) command).getRecipient();
+        }
+        return null;
+    }
+
+    private void executeCommand(CommandParser.Command command) {
+        switch (command.getType()) {
+            case HELP:
+                if (recyclerView.getAdapter() != commandAdapter) {
+                    recyclerView.setAdapter(commandAdapter);
+                }
+                commandAdapter.submit(CommandQueryClassifier.classify("!"));
+                return;
+            case CALL:
+                executeCall((CommandParser.CallCommand) command);
+                return;
+            case TEXT:
+                executeText((CommandParser.TextCommand) command);
+                return;
+            case TIMER:
+                CommandParser.TimerCommand timer = (CommandParser.TimerCommand) command;
+                launchCommandIntent(CommandIntentFactory.setTimer(timer.getDurationMinutes(), timer.getLabel()),
+                        "No Clock app is available.", "Timer form opened.");
+                return;
+            case TODO:
+                Todo todo = todosRepository.add(((CommandParser.TodoCommand) command).getText());
+                showCommandStatus("To-do saved", todo.getText());
+                return;
+            case TODOS:
+                launchCommandIntent(new Intent(this, TodosActivity.class),
+                        "The to-do list is unavailable.", "Opening to-dos.");
+                return;
+            case NOTE:
+                Note note = notesRepository.add(((CommandParser.NoteCommand) command).getText());
+                showCommandStatus("Note saved", note.getText());
+                return;
+            case NOTES:
+                launchCommandIntent(new Intent(this, NotesActivity.class),
+                        "The notes list is unavailable.", "Opening notes.");
+                return;
+            case EVENT:
+                CommandParser.EventCommand event = (CommandParser.EventCommand) command;
+                launchCommandIntent(CommandIntentFactory.insertEvent(event), "No Calendar app is available.",
+                        "Calendar event form opened.");
+                return;
+            case TORCH:
+                toggleTorch();
+                return;
+            case CAMERA:
+                launchCommandIntent(CommandIntentFactory.camera(),
+                        "No camera app is available.", "Camera opened.");
+                return;
+        }
+    }
+
+    private void executeCall(CommandParser.CallCommand command) {
+        executeRecipient(command.getRecipient(), new ContactNumberAction() {
+            @Override
+            public void open(String number) {
+                launchCommandIntent(CommandIntentFactory.dial(number),
+                        "No dialer is available.", "Dialer opened with " + number + ".");
+            }
+        });
+    }
+
+    private void executeText(final CommandParser.TextCommand command) {
+        executeRecipient(command.getRecipient(), new ContactNumberAction() {
+            @Override
+            public void open(String number) {
+                launchCommandIntent(CommandIntentFactory.composeText(number, command.getMessage()),
+                        "No SMS app is available.",
+                        "SMS composer opened for " + number + ".");
+            }
+        });
+    }
+
+    private void executeRecipient(CommandParser.Recipient recipient, ContactNumberAction action) {
+        if (recipient.getKind() == CommandParser.Recipient.Kind.PHONE_NUMBER) {
+            action.open(recipient.getValue());
+            return;
+        }
+        if (!contactsResolver.hasPermission()) {
+            requestContactsFor(search.getText().toString());
+            return;
+        }
+        List<ContactsResolver.Contact> contacts = contactsResolver.contactsFor(recipient.getValue());
+        if (contacts.isEmpty()) {
+            showCommandStatus("No matching contact", "Use !call or !text with a phone number.");
+            return;
+        }
+        if (contacts.size() == 1) {
+            action.open(contacts.get(0).getNumber());
+            return;
+        }
+
+        String[] labels = new String[contacts.size()];
+        for (int index = 0; index < contacts.size(); index++) {
+            labels[index] = contacts.get(index).getLabel();
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Choose a contact number")
+                .setItems(labels, (dialog, which) -> action.open(contacts.get(which).getNumber()))
+                .show();
+    }
+
+    private void toggleTorch() {
+        showCommandStatus("Checking torch", "Reading the rear torch state.");
+        torchController.toggle(new TorchController.Callback() {
+            @Override
+            public void onResult(final TorchController.Result result) {
+                runOnUiThread(() -> {
+                    if ("!torch".equalsIgnoreCase(search.getText().toString().trim())) {
+                        showTorchResult(result);
+                    }
+                });
+            }
+        });
+    }
+
+    private void showTorchResult(TorchController.Result result) {
+        switch (result) {
+            case ON:
+                showCommandStatus("Torch on", "Rear torch enabled.");
+                return;
+            case OFF:
+                showCommandStatus("Torch off", "Rear torch disabled.");
+                return;
+            case PERMISSION_DENIED:
+                requestCameraForTorch();
+                return;
+            case UNAVAILABLE:
+                showCommandStatus("Torch unavailable", "No rear torch is available.");
+                return;
+        }
+    }
+
+    private void launchCommandIntent(Intent intent, String unavailableMessage, String confirmationMessage) {
+        if (intent.resolveActivity(getPackageManager()) == null) {
+            showCommandStatus("Unavailable", unavailableMessage);
+            return;
+        }
+        try {
+            startActivity(intent);
+            showCommandStatus("Ready", confirmationMessage);
+        } catch (ActivityNotFoundException | SecurityException exception) {
+            showCommandStatus("Unavailable", unavailableMessage);
+        }
+    }
+
+    private void requestContactsFor(String query) {
+        pendingPermissionCommand = query;
+        requestPermission(Manifest.permission.READ_CONTACTS, CONTACTS_PERMISSION_REQUEST,
+                "Contacts permission is required for named recipients.");
+    }
+
+    private void requestCameraForTorch() {
+        pendingPermissionCommand = search.getText().toString();
+        requestPermission(Manifest.permission.CAMERA, CAMERA_PERMISSION_REQUEST,
+                "Camera permission is required for torch.");
+    }
+
+    private void requestPermission(String permission, int requestCode, String denialMessage) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            showPermissionSettings(denialMessage);
+            return;
+        }
+        if (checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED) {
+            submitPendingPermissionCommand();
+            return;
+        }
+        requestPermissions(new String[]{permission}, requestCode);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        boolean granted = grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+        if (granted) {
+            submitPendingPermissionCommand();
+        } else if (requestCode == CONTACTS_PERMISSION_REQUEST) {
+            showPermissionSettings("Contacts permission is required for named recipients.");
+        } else if (requestCode == CAMERA_PERMISSION_REQUEST) {
+            showPermissionSettings("Camera permission is required for torch.");
+        }
+    }
+
+    private void submitPendingPermissionCommand() {
+        if (pendingPermissionCommand == null) {
+            return;
+        }
+        String query = pendingPermissionCommand;
+        pendingPermissionCommand = null;
+        if (!query.equals(search.getText().toString())) {
+            search.setText(query);
+            search.setSelection(query.length());
+        }
+        submitCommand();
+    }
+
+    private void showPermissionSettings(String message) {
+        showCommandStatus("Permission required", message);
+        new AlertDialog.Builder(this)
+                .setMessage(message)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton("Open settings", (dialog, which) -> openAppSettings(message))
+                .show();
+    }
+
+    private void showCommandStatus(String title, String detail) {
+        adapter.pauseFiltering();
+        if (recyclerView.getAdapter() != commandAdapter) {
+            recyclerView.setAdapter(commandAdapter);
+        }
+        commandAdapter.showStatus(title, detail);
+    }
+
+    private void showCommandPermissionStatus(String title, String detail) {
+        adapter.pauseFiltering();
+        if (recyclerView.getAdapter() != commandAdapter) {
+            recyclerView.setAdapter(commandAdapter);
+        }
+        commandAdapter.showPermissionStatus(title, detail);
+    }
+
+    private void openAppSettings(String fallbackMessage) {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                .setData(Uri.parse("package:" + getPackageName()));
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException ignored) {
+            Toast.makeText(this, fallbackMessage, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private interface ContactNumberAction {
+        void open(String number);
     }
 
     private boolean canOpenDialer() {

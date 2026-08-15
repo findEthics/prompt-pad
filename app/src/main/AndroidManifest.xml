@@ -3,13 +3,19 @@
     xmlns:tools="http://schemas.android.com/tools" >
 
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
 
     <application
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
+        android:fullBackupContent="@xml/backup_rules"
         android:label="Titan"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
@@ -19,6 +25,14 @@
             android:exported="false"
             android:label="@string/title_activity_settings"
             />
+        <activity
+            android:name=".NotesActivity"
+            android:exported="false"
+            android:label="Notes" />
+        <activity
+            android:name=".TodosActivity"
+            android:exported="false"
+            android:label="To-dos" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

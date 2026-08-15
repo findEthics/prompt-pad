@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 
 /**
  * Classifies launcher search input for display. It deliberately performs no command execution
@@ -50,72 +48,21 @@ public final class CommandQueryClassifier {
     }
 
     private static Result classifyCommand(Command command, String arguments) {
-        switch (command) {
-            case HELP:
-            case TODOS:
-            case NOTES:
-            case TORCH:
-            case CAMERA:
-                return arguments.isEmpty() ? Result.preview(command, arguments)
-                        : Result.validation(command, "This command does not take arguments.");
-            case CALL:
-            case TODO:
-            case NOTE:
-                return arguments.isEmpty() ? Result.suggestion(command) : Result.preview(command, arguments);
-            case TEXT:
-                return hasWords(arguments, 2) ? Result.preview(command, arguments)
-                        : Result.suggestion(command);
-            case TIMER:
-                if (arguments.isEmpty()) return Result.suggestion(command);
-                return isDuration(firstWord(arguments)) ? Result.preview(command, arguments)
-                        : Result.validation(command, "Use durations such as 10m, 1h, or 1h30m.");
-            case EVENT:
-                return classifyEvent(command, arguments);
+        if (arguments.isEmpty() && (command == Command.CALL || command == Command.TEXT
+                || command == Command.TIMER || command == Command.TODO || command == Command.NOTE
+                || command == Command.EVENT)) {
+            return Result.suggestion(command);
         }
-        return Result.unknown(command.getName());
-    }
-
-    private static Result classifyEvent(Command command, String arguments) {
-        if (!hasWords(arguments, 3)) return Result.suggestion(command);
-        String[] parts = arguments.split("\\s+", 3);
-        if (!isEventDate(parts[0])) {
-            return Result.validation(command, "Use today, tomorrow, or a valid YYYY-MM-DD date.");
+        CommandParser.ParseResult parsed = new CommandParser().parse(
+                "!" + command.getName() + (arguments.isEmpty() ? "" : " " + arguments));
+        if (parsed.isSuccess() || parsed.getError().getCode()
+                == CommandParser.ErrorCode.CONTACT_RESOLUTION_REQUIRED) {
+            return Result.preview(command, arguments);
         }
-        if (!isEventTime(parts[1])) {
-            return Result.validation(command, "Use a 24-hour HH:mm time.");
+        if (parsed.getError().getCode() == CommandParser.ErrorCode.MISSING_ARGUMENT) {
+            return Result.suggestion(command);
         }
-        return Result.preview(command, arguments);
-    }
-
-    private static boolean hasWords(String value, int count) {
-        if (value.isEmpty()) return false;
-        return value.trim().split("\\s+").length >= count;
-    }
-
-    private static String firstWord(String value) {
-        int separator = firstWhitespace(value);
-        return separator == -1 ? value : value.substring(0, separator);
-    }
-
-    private static boolean isDuration(String duration) {
-        return duration.matches("(?:[1-9]\\d*h(?:\\d+m)?|[1-9]\\d*m)");
-    }
-
-    private static boolean isEventDate(String date) {
-        if ("today".equalsIgnoreCase(date) || "tomorrow".equalsIgnoreCase(date)) return true;
-        if (!date.matches("\\d{4}-\\d{2}-\\d{2}")) return false;
-
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
-        formatter.setLenient(false);
-        try {
-            return formatter.parse(date) != null;
-        } catch (ParseException exception) {
-            return false;
-        }
-    }
-
-    private static boolean isEventTime(String time) {
-        return time.matches("(?:[01]\\d|2[0-3]):[0-5]\\d");
+        return Result.validation(command, parsed.getError().getMessage());
     }
 
     private static int firstWhitespace(String value) {
