@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="16dp"
@@ -12,7 +13,7 @@
         android:id="@+id/command_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-light"
+        app:fontFamily="@font/jetbrains_mono"
         android:textAlignment="center"
         android:textColor="?attr/colorPrimary"
         android:textSize="26sp" />
@@ -22,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:fontFamily="sans-serif-light"
+        app:fontFamily="@font/jetbrains_mono"
         android:gravity="center"
         android:textColor="?attr/colorControlNormal"
         android:textSize="16sp" />

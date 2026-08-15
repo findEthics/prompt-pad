@@ -20,13 +20,19 @@ public final class CommandIntentFactory {
                 .putExtra("sms_body", message);
     }
 
-    public static Intent setTimer(int durationMinutes, String label) {
+    public static Intent setTimer(int durationSeconds, String label) {
         Intent intent = new Intent(AlarmClock.ACTION_SET_TIMER)
-                .putExtra(AlarmClock.EXTRA_LENGTH, durationMinutes * 60);
+                .putExtra(AlarmClock.EXTRA_LENGTH, durationSeconds);
         if (label != null && !label.isEmpty()) {
             intent.putExtra(AlarmClock.EXTRA_MESSAGE, label);
         }
         return intent;
+    }
+
+    public static Intent setAlarm(int hour, int minute) {
+        return new Intent(AlarmClock.ACTION_SET_ALARM)
+                .putExtra(AlarmClock.EXTRA_HOUR, hour)
+                .putExtra(AlarmClock.EXTRA_MINUTES, minute);
     }
 
     public static Intent insertEvent(CommandParser.EventCommand event) {

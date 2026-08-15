@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -21,7 +22,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.content.res.TypedArray;
-import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -302,11 +302,11 @@ public class MainActivity extends AppCompatActivity {
 
         CharSequence[] alertApps = appNames.toArray(new CharSequence[0]);
         int i = 0;
-        for (i = 0; i < prefs.getInt(NUMBER_OF_APPS, 8); i++) {
+        for (i = 0; i < prefs.getInt(NUMBER_OF_APPS, 4); i++) {
             TextView textView = new TextView(this);
             textView.setTextColor(getColorFromAttr(androidx.appcompat.R.attr.colorPrimary));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 32);
-            textView.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
+            textView.setTypeface(ResourcesCompat.getFont(this, R.font.jetbrains_mono));
             textView.setPadding(0, 0, 0, 50);
             textView.setText(prefs.getString(Integer.toString(i), "App"));
             textView.setTag(i);
@@ -454,8 +454,13 @@ public class MainActivity extends AppCompatActivity {
                 return;
             case TIMER:
                 CommandParser.TimerCommand timer = (CommandParser.TimerCommand) command;
-                launchCommandIntent(CommandIntentFactory.setTimer(timer.getDurationMinutes(), timer.getLabel()),
+                launchCommandIntent(CommandIntentFactory.setTimer(timer.getDurationSeconds(), timer.getLabel()),
                         "No Clock app is available.", "Timer form opened.");
+                return;
+            case ALARM:
+                CommandParser.AlarmCommand alarm = (CommandParser.AlarmCommand) command;
+                launchCommandIntent(CommandIntentFactory.setAlarm(alarm.getHour(), alarm.getMinute()),
+                        "No Clock app is available.", "Alarm form opened.");
                 return;
             case TODO:
                 Todo todo = todosRepository.add(((CommandParser.TodoCommand) command).getText());

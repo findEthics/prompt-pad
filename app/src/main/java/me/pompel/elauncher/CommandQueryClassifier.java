@@ -49,8 +49,8 @@ public final class CommandQueryClassifier {
 
     private static Result classifyCommand(Command command, String arguments) {
         if (arguments.isEmpty() && (command == Command.CALL || command == Command.TEXT
-                || command == Command.TIMER || command == Command.TODO || command == Command.NOTE
-                || command == Command.EVENT)) {
+                || command == Command.TIMER || command == Command.ALARM || command == Command.TODO
+                || command == Command.NOTE || command == Command.EVENT)) {
             return Result.suggestion(command);
         }
         CommandParser.ParseResult parsed = new CommandParser().parse(
@@ -104,6 +104,7 @@ public final class CommandQueryClassifier {
         CALL("call", "!call <contact-or-number>"),
         TEXT("text", "!text <contact-or-number> <message>"),
         TIMER("timer", "!timer <duration> [label]"),
+        ALARM("alarm", "!alarm HH:MM"),
         TODO("todo", "!todo <text>"),
         TODOS("todos", "!todos"),
         NOTE("note", "!note <text>"),

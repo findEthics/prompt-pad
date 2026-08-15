@@ -49,6 +49,7 @@ public class CommandQueryClassifierTest {
         assertSuggestion("!call", CommandQueryClassifier.Command.CALL);
         assertSuggestion("!text", CommandQueryClassifier.Command.TEXT);
         assertSuggestion("!timer", CommandQueryClassifier.Command.TIMER);
+        assertSuggestion("!alarm", CommandQueryClassifier.Command.ALARM);
         assertSuggestion("!todo", CommandQueryClassifier.Command.TODO);
         assertPreview("!todos", CommandQueryClassifier.Command.TODOS);
         assertSuggestion("!note", CommandQueryClassifier.Command.NOTE);
@@ -78,7 +79,7 @@ public class CommandQueryClassifierTest {
         assertEquals(CommandQueryClassifier.DisplayState.UNKNOWN_COMMAND, result.getDisplayState());
         assertNull(result.getCommand());
         assertTrue(result.getMessage().startsWith("Unknown command: zoom"));
-        assertEquals(11, result.getCommands().size());
+        assertEquals(12, result.getCommands().size());
         assertTrue(result.getCommands().contains(CommandQueryClassifier.Command.HELP));
 
         assertEquals(CommandQueryClassifier.DisplayState.UNKNOWN_COMMAND,
@@ -90,6 +91,7 @@ public class CommandQueryClassifierTest {
         assertSuggestion("!call", CommandQueryClassifier.Command.CALL);
         assertSuggestion("!text +15551234567", CommandQueryClassifier.Command.TEXT);
         assertSuggestion("!timer", CommandQueryClassifier.Command.TIMER);
+        assertSuggestion("!alarm", CommandQueryClassifier.Command.ALARM);
         assertSuggestion("!todo", CommandQueryClassifier.Command.TODO);
         assertSuggestion("!note", CommandQueryClassifier.Command.NOTE);
         assertSuggestion("!event today 14:30", CommandQueryClassifier.Command.EVENT);
@@ -98,6 +100,11 @@ public class CommandQueryClassifierTest {
         assertEquals(CommandQueryClassifier.DisplayState.VALIDATION_ERROR, result.getDisplayState());
         assertEquals(CommandQueryClassifier.Command.TIMER, result.getCommand());
         assertEquals("!timer <duration> [label]", result.getSyntaxHint());
+
+        result = CommandQueryClassifier.classify("!alarm 7:05");
+        assertEquals(CommandQueryClassifier.DisplayState.VALIDATION_ERROR, result.getDisplayState());
+        assertEquals(CommandQueryClassifier.Command.ALARM, result.getCommand());
+        assertEquals("!alarm HH:MM", result.getSyntaxHint());
     }
 
     @Test
@@ -118,7 +125,7 @@ public class CommandQueryClassifierTest {
         CommandQueryClassifier.Result result = CommandQueryClassifier.classify(input);
         assertEquals(CommandQueryClassifier.Mode.COMMAND_SEARCH, result.getMode());
         assertEquals(CommandQueryClassifier.DisplayState.COMMAND_HELP, result.getDisplayState());
-        assertEquals(11, result.getCommands().size());
+        assertEquals(12, result.getCommands().size());
         assertTrue(result.isDisplayOnly());
     }
 

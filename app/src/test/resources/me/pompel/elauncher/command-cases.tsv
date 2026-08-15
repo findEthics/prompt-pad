@@ -33,12 +33,18 @@ text-bare-raw-contacts-denied-submit	!text 5551234567 hello there	SUBMIT	CONTACT
 text-submit	!text +15551234567 hello there	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	TEXT	recipient=+15551234567;message=hello there	OPEN_SMS_COMPOSER	Open prefilled SMS composer without sending
 text-handler-unavailable	!text +15551234567 hello	SUBMIT	SMS_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	TEXT	recipient=+15551234567;message=hello	SHOW_UNAVAILABLE	No SMS app is available
 timer-missing-duration	!timer	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	TIMER	-	SHOW_SYNTAX	Use !timer <duration> [label]
-timer-hours-preview	!timer 1h	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TIMER	duration=60m	NONE	One-hour timer preview is ready
-timer-valid-preview	!timer 1h30m Tea	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TIMER	duration=90m;label=Tea	NONE	Timer preview is ready
-timer-zero-duration	!timer 0m	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ERROR	TIMER	duration=0m	SHOW_SYNTAX	Duration must be greater than zero
-timer-invalid-duration	!timer 10x	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ERROR	TIMER	duration=10x	SHOW_SYNTAX	Use durations such as 10m, 1h, or 1h30m
-timer-submit	!timer 10m	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	TIMER	duration=10m	OPEN_TIMER	Open the system timer form
-timer-handler-unavailable	!timer 10m	SUBMIT	CLOCK_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	TIMER	duration=10m	SHOW_UNAVAILABLE	No Clock app is available
+timer-hours-preview	!timer 1h	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TIMER	duration=3600s	NONE	One-hour timer preview is ready
+timer-valid-preview	!timer 1h30m Tea	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TIMER	duration=5400s;label=Tea	NONE	Timer preview is ready
+timer-seconds-preview	!timer 30s Tea	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TIMER	duration=30s;label=Tea	NONE	Seconds-only timer preview is ready
+timer-zero-duration	!timer 0m	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ERROR	TIMER	duration=0s	SHOW_SYNTAX	Duration must be greater than zero
+timer-invalid-duration	!timer 10x	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ERROR	TIMER	duration=10x	SHOW_SYNTAX	Use durations such as 30s, 10m, 1h, or 1m15s
+timer-submit	!timer 10m	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	TIMER	duration=600s	OPEN_TIMER	Open the system timer form
+timer-handler-unavailable	!timer 10m	SUBMIT	CLOCK_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	TIMER	duration=600s	SHOW_UNAVAILABLE	No Clock app is available
+alarm-missing-time	!alarm	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	ALARM	-	SHOW_SYNTAX	Use !alarm HH:MM
+alarm-preview	!alarm 07:05	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	ALARM	time=07:05	NONE	Alarm preview is ready
+alarm-invalid-time	!alarm 7:05	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ERROR	ALARM	time=7:05	SHOW_SYNTAX	Use a 24-hour HH:mm time
+alarm-submit	!alarm 07:05	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	ALARM	time=07:05	OPEN_ALARM	Open the system alarm form
+alarm-handler-unavailable	!alarm 07:05	SUBMIT	CLOCK_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	ALARM	time=07:05	SHOW_UNAVAILABLE	No Clock app is available
 todo-missing-text	!todo	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	TODO	-	SHOW_SYNTAX	Use !todo <text>
 todo-preview	!todo Buy batteries	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TODO	text=Buy batteries	NONE	To-do preview is ready
 todo-submit	!todo Buy batteries	SUBMIT	DEFAULT	COMMAND_SEARCH	SUCCESS	TODO	text=Buy batteries	SAVE_TODO	Save a local incomplete to-do

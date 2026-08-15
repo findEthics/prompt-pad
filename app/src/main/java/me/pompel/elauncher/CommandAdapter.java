@@ -2,10 +2,12 @@ package me.pompel.elauncher;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Typeface;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -104,6 +106,9 @@ public class CommandAdapter extends RecyclerView.Adapter<CommandAdapter.CommandV
         for (ForegroundColorSpan span : text.getSpans(0, text.length(), ForegroundColorSpan.class)) {
             text.removeSpan(span);
         }
+        for (StyleSpan span : text.getSpans(0, text.length(), StyleSpan.class)) {
+            text.removeSpan(span);
+        }
         if (text.length() == 0 || text.charAt(0) != '!') {
             return;
         }
@@ -115,6 +120,7 @@ public class CommandAdapter extends RecyclerView.Adapter<CommandAdapter.CommandV
                 new int[]{androidx.appcompat.R.attr.colorAccent})) {
             text.setSpan(new ForegroundColorSpan(attributes.getColor(0, 0)), 0, end,
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            text.setSpan(new StyleSpan(Typeface.BOLD), 0, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
     }
 

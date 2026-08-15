@@ -25,7 +25,8 @@ public class CommandIntentFactoryInstrumentedTest {
     public void safeSystemIntentsOnlyPrefillForms() {
         Intent dial = CommandIntentFactory.dial("+15551234567");
         Intent text = CommandIntentFactory.composeText("5551234567", "hello");
-        Intent timer = CommandIntentFactory.setTimer(90, "Tea");
+        Intent timer = CommandIntentFactory.setTimer(95, "Tea");
+        Intent alarm = CommandIntentFactory.setAlarm(7, 5);
 
         CommandParser.EventCommand event = (CommandParser.EventCommand) new CommandParser(
                 new FixedClock()).parse("!event tomorrow 14:30 Project review").getCommand();
@@ -36,8 +37,13 @@ public class CommandIntentFactoryInstrumentedTest {
         assertEquals(Intent.ACTION_SENDTO, text.getAction());
         assertEquals("smsto:5551234567", text.getDataString());
         assertEquals("hello", text.getStringExtra("sms_body"));
-        assertEquals(90 * 60, timer.getIntExtra(AlarmClock.EXTRA_LENGTH, 0));
+        assertEquals(95, timer.getIntExtra(AlarmClock.EXTRA_LENGTH, 0));
         assertEquals("Tea", timer.getStringExtra(AlarmClock.EXTRA_MESSAGE));
+        assertEquals(AlarmClock.ACTION_SET_ALARM, alarm.getAction());
+        assertEquals(7, alarm.getIntExtra(AlarmClock.EXTRA_HOUR, -1));
+        assertEquals(5, alarm.getIntExtra(AlarmClock.EXTRA_MINUTES, -1));
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        assertTrue(alarm.resolveActivity(context.getPackageManager()) != null);
         assertEquals(Intent.ACTION_INSERT, calendar.getAction());
         assertEquals("Project review", calendar.getStringExtra(CalendarContract.Events.TITLE));
         assertEquals(event.getStartTimeMillis(), calendar.getLongExtra(

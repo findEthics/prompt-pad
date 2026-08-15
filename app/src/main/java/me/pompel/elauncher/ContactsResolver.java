@@ -133,10 +133,6 @@ public final class ContactsResolver implements CommandParser.ContactResolver {
             return id;
         }
 
-        public String getDisplayName() {
-            return displayName;
-        }
-
         public String getNumber() {
             return number;
         }

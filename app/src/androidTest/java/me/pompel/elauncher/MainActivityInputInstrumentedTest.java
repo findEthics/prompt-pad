@@ -8,8 +8,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.app.Activity;
+import android.graphics.Typeface;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
@@ -49,14 +51,14 @@ public class MainActivityInputInstrumentedTest {
     }
 
     @Test
-    public void commandTokensUseTheAccentColorInInputAndResults() {
+    public void commandTokensUseTheAccentColorAndBoldStyleInInputAndResults() {
         MainActivity activity = startActivity();
         try {
             InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
                 activity.findViewById(R.id.AppDrawer).setVisibility(View.VISIBLE);
                 EditText search = activity.findViewById(R.id.search);
                 search.setText("!timer 1m");
-                assertCommandTokenAccent(search.getText(), 6, activity);
+                assertCommandTokenStyle(search.getText(), 6, activity);
             });
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
@@ -64,7 +66,7 @@ public class MainActivityInputInstrumentedTest {
                 RecyclerView.ViewHolder holder = results.findViewHolderForAdapterPosition(0);
                 assertTrue(holder != null);
                 TextView title = holder.itemView.findViewById(R.id.command_title);
-                assertCommandTokenAccent(title.getText(), 6, activity);
+                assertCommandTokenStyle(title.getText(), 6, activity);
             });
         } finally {
             activity.finish();
@@ -83,6 +85,25 @@ public class MainActivityInputInstrumentedTest {
             assertDarkTheme(NotesActivity.class);
             assertDarkTheme(TodosActivity.class);
             assertDarkTheme(SettingsActivity.class);
+        } finally {
+            SharedPreferences.Editor editor = preferences.edit();
+            if (hadPreference) editor.putBoolean("dark_mode_preference", previousValue);
+            else editor.remove("dark_mode_preference");
+            editor.commit();
+        }
+    }
+
+    @Test
+    public void darkThemeIsTheDefaultButSavedChoiceWins() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean hadPreference = preferences.contains("dark_mode_preference");
+        boolean previousValue = preferences.getBoolean("dark_mode_preference", false);
+        try {
+            preferences.edit().remove("dark_mode_preference").commit();
+            assertTrue(ThemePreference.isDarkMode(context));
+            preferences.edit().putBoolean("dark_mode_preference", false).commit();
+            assertTrue(!ThemePreference.isDarkMode(context));
         } finally {
             SharedPreferences.Editor editor = preferences.edit();
             if (hadPreference) editor.putBoolean("dark_mode_preference", previousValue);
@@ -142,17 +163,24 @@ public class MainActivityInputInstrumentedTest {
         }
     }
 
-    private static void assertCommandTokenAccent(CharSequence text, int end, Context context) {
+    private static void assertCommandTokenStyle(CharSequence text, int end, Context context) {
         assertTrue(text instanceof Spanned);
+        Spanned styled = (Spanned) text;
         int expected = ContextCompat.getColor(context, R.color.command_accent);
-        for (ForegroundColorSpan span : ((Spanned) text).getSpans(0, end,
-                ForegroundColorSpan.class)) {
-            if (((Spanned) text).getSpanStart(span) == 0
-                    && ((Spanned) text).getSpanEnd(span) == end) {
+        boolean accented = false;
+        for (ForegroundColorSpan span : styled.getSpans(0, end, ForegroundColorSpan.class)) {
+            if (styled.getSpanStart(span) == 0 && styled.getSpanEnd(span) == end) {
                 assertEquals(expected, span.getForegroundColor());
+                accented = true;
+            }
+        }
+        assertTrue("Expected an accent span for the command token", accented);
+        for (StyleSpan span : styled.getSpans(0, end, StyleSpan.class)) {
+            if (styled.getSpanStart(span) == 0 && styled.getSpanEnd(span) == end
+                    && span.getStyle() == Typeface.BOLD) {
                 return;
             }
         }
-        fail("Expected an accent span for the command token");
+        fail("Expected a bold span for the command token");
     }
 }

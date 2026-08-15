@@ -1,7 +1,6 @@
 package me.pompel.elauncher;
 
 import android.content.Context;
-import android.content.res.Configuration;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -22,9 +21,7 @@ final class ThemePreference {
     }
 
     static boolean isDarkMode(Context context) {
-        boolean systemDarkMode = (context.getResources().getConfiguration().uiMode
-                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
         return PreferenceManager.getDefaultSharedPreferences(context)
-                .getBoolean(DARK_MODE, systemDarkMode);
+                .getBoolean(DARK_MODE, true);
     }
 }

@@ -41,13 +41,13 @@ public class CommandContractFixtureTest {
             "CONFIRMATION", "SUCCESS"
     );
     private static final Set<String> COMMANDS = values(
-            "-", "HELP", "CALL", "TEXT", "TIMER", "TODO", "TODOS", "NOTE", "NOTES",
+            "-", "HELP", "CALL", "TEXT", "TIMER", "ALARM", "TODO", "TODOS", "NOTE", "NOTES",
             "EVENT", "TORCH", "CAMERA", "UNKNOWN"
     );
     private static final Set<String> EFFECTS = values(
             "NONE", "FILTER_APPS", "SHOW_HELP", "SHOW_SYNTAX", "SHOW_CONTACT_CHOICES",
             "OFFER_SETTINGS", "SHOW_UNAVAILABLE", "OPEN_DIALER", "OPEN_SMS_COMPOSER",
-            "OPEN_TIMER", "SAVE_TODO", "OPEN_TODOS", "SAVE_NOTE", "OPEN_NOTES",
+            "OPEN_TIMER", "OPEN_ALARM", "SAVE_TODO", "OPEN_TODOS", "SAVE_NOTE", "OPEN_NOTES",
             "OPEN_CALENDAR", "TOGGLE_TORCH", "OPEN_CAMERA", "COMPLETE_TODO", "DELETE_TODO",
             "DELETE_NOTE", "RETURN_TO_LAUNCHER"
     );
@@ -74,6 +74,7 @@ public class CommandContractFixtureTest {
             boolean hasTorchOnCase = false;
             boolean hasTorchOffCase = false;
             boolean hasOneHourTimerCase = false;
+            boolean hasSecondsTimerCase = false;
             boolean hasIsoDateCase = false;
             boolean hasMinimumLengthNumberCase = false;
             boolean hasMaximumLengthNumberCase = false;
@@ -131,8 +132,10 @@ public class CommandContractFixtureTest {
                     }
                 }
 
-                if ("TIMER".equals(fields[6]) && fields[7].startsWith("duration=60m")) {
-                    hasOneHourTimerCase = true;
+                if ("TIMER".equals(fields[6])) {
+                    hasOneHourTimerCase |= fields[7].startsWith("duration=3600s");
+                    hasSecondsTimerCase |= fields[7].matches("duration=\\d+s(;.*)?")
+                            && fields[1].matches("!timer \\d+[sS](?: .*)?");
                 }
 
                 if ("CALL".equals(fields[6])
@@ -213,6 +216,7 @@ public class CommandContractFixtureTest {
             assertTrue("Fixture must distinguish torch on", hasTorchOnCase);
             assertTrue("Fixture must distinguish torch off", hasTorchOffCase);
             assertTrue("Fixture must cover a one-hour timer", hasOneHourTimerCase);
+            assertTrue("Fixture must cover a seconds-only timer", hasSecondsTimerCase);
             assertTrue("Fixture must cover a valid ISO event date", hasIsoDateCase);
             assertTrue("Fixture must cover a seven-digit number", hasMinimumLengthNumberCase);
             assertTrue("Fixture must cover a fifteen-digit number", hasMaximumLengthNumberCase);

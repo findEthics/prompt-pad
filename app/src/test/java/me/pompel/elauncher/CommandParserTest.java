@@ -97,7 +97,7 @@ public class CommandParserTest {
     }
 
     @Test
-    public void normalizesTimerDurationsToMinutes() {
+    public void normalizesTimerDurationsToSeconds() {
         CommandParser parser = parserAt("2026-08-15 10:00");
 
         CommandParser.TimerCommand hour = (CommandParser.TimerCommand) parser.parse("!timer 1h").getCommand();
@@ -105,13 +105,47 @@ public class CommandParserTest {
                 .parse("!timer 1H30m Tea").getCommand();
         CommandParser.TimerCommand zeroHours = (CommandParser.TimerCommand) parser
                 .parse("!timer 0h30m Stretch").getCommand();
+        CommandParser.TimerCommand secondsOnly = (CommandParser.TimerCommand) parser
+                .parse("!timer 30S Tea").getCommand();
+        CommandParser.TimerCommand seconds = (CommandParser.TimerCommand) parser
+                .parse("!timer 3M20S Tea").getCommand();
+        CommandParser.TimerCommand maximum = (CommandParser.TimerCommand) parser
+                .parse("!timer 2147483647s").getCommand();
 
-        assertEquals(60, hour.getDurationMinutes());
-        assertEquals(90, combined.getDurationMinutes());
+        assertEquals(3600, hour.getDurationSeconds());
+        assertEquals(5400, combined.getDurationSeconds());
         assertEquals("Tea", combined.getLabel());
-        assertEquals(30, zeroHours.getDurationMinutes());
+        assertEquals(1800, zeroHours.getDurationSeconds());
+        assertEquals("Stretch", zeroHours.getLabel());
+        assertEquals(30, secondsOnly.getDurationSeconds());
+        assertEquals("Tea", secondsOnly.getLabel());
+        assertEquals(200, seconds.getDurationSeconds());
+        assertEquals("Tea", seconds.getLabel());
+        assertEquals(Integer.MAX_VALUE, maximum.getDurationSeconds());
+        assertError(parser.parse("!timer 0s"), CommandParser.ErrorCode.INVALID_DURATION);
         assertError(parser.parse("!timer 0m"), CommandParser.ErrorCode.INVALID_DURATION);
         assertError(parser.parse("!timer 10x"), CommandParser.ErrorCode.INVALID_DURATION);
+        assertError(parser.parse("!timer 1s1m"), CommandParser.ErrorCode.INVALID_DURATION);
+        assertError(parser.parse("!timer 2147483648s"), CommandParser.ErrorCode.INVALID_DURATION);
+    }
+
+    @Test
+    public void parsesStrictTwentyFourHourAlarms() {
+        CommandParser parser = parserAt("2026-08-15 10:00");
+
+        CommandParser.AlarmCommand midnight = (CommandParser.AlarmCommand) parser
+                .parse("!alarm 00:00").getCommand();
+        CommandParser.AlarmCommand lastMinute = (CommandParser.AlarmCommand) parser
+                .parse("!alarm 23:59").getCommand();
+
+        assertEquals(0, midnight.getHour());
+        assertEquals(0, midnight.getMinute());
+        assertEquals(23, lastMinute.getHour());
+        assertEquals(59, lastMinute.getMinute());
+        assertError(parser.parse("!alarm"), CommandParser.ErrorCode.MISSING_ARGUMENT);
+        assertError(parser.parse("!alarm 7:05"), CommandParser.ErrorCode.INVALID_TIME);
+        assertError(parser.parse("!alarm 24:00"), CommandParser.ErrorCode.INVALID_TIME);
+        assertError(parser.parse("!alarm 07:05 label"), CommandParser.ErrorCode.UNEXPECTED_ARGUMENT);
     }
 
     @Test

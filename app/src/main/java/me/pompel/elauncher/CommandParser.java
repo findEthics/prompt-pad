@@ -11,7 +11,7 @@ public final class CommandParser {
     public static final int DEFAULT_EVENT_DURATION_MINUTES = 30;
 
     private static final Pattern DURATION_PATTERN = Pattern.compile(
-            "(?:(\\d+)h)?(?:(\\d+)m)?", Pattern.CASE_INSENSITIVE);
+            "(?:(\\d+)h)?(?:(\\d+)m)?(?:(\\d+)s)?", Pattern.CASE_INSENSITIVE);
     private static final Pattern ISO_DATE_PATTERN = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})");
     private static final Pattern TIME_PATTERN = Pattern.compile("(?:[01]\\d|2[0-3]):[0-5]\\d");
 
@@ -61,6 +61,9 @@ public final class CommandParser {
         }
         if ("timer".equals(name)) {
             return parseTimer(parts.rest);
+        }
+        if ("alarm".equals(name)) {
+            return parseAlarm(parts.rest);
         }
         if ("note".equals(name)) {
             return parseNote(parts.rest);
@@ -179,27 +182,52 @@ public final class CommandParser {
 
         Parts parts = splitFirstWord(arguments);
         Matcher matcher = DURATION_PATTERN.matcher(parts.first);
-        if (!matcher.matches() || (matcher.group(1) == null && matcher.group(2) == null)) {
-            return error(ErrorCode.INVALID_DURATION, "Use durations such as 10m, 1h, or 1h30m.",
+        if (!matcher.matches() || (matcher.group(1) == null && matcher.group(2) == null
+                && matcher.group(3) == null)) {
+            return error(ErrorCode.INVALID_DURATION, "Use durations such as 30s, 10m, 1h, or 1m15s.",
                     "!timer <duration> [label]");
         }
 
         long hours = parseLong(matcher.group(1));
         long minutes = parseLong(matcher.group(2));
-        if (hours < 0 || minutes < 0 || hours > (Integer.MAX_VALUE - minutes) / 60) {
+        long seconds = parseLong(matcher.group(3));
+        if (hours < 0 || minutes < 0 || seconds < 0 || hours > Integer.MAX_VALUE / 3600) {
             return error(ErrorCode.INVALID_DURATION, "Timer duration is too large.",
                     "!timer <duration> [label]");
         }
-        int totalMinutes = (int) (hours * 60 + minutes);
-        if (totalMinutes <= 0) {
+        int totalSeconds = (int) (hours * 3600);
+        if (minutes > (Integer.MAX_VALUE - totalSeconds) / 60) {
+            return error(ErrorCode.INVALID_DURATION, "Timer duration is too large.",
+                    "!timer <duration> [label]");
+        }
+        totalSeconds += (int) (minutes * 60);
+        if (seconds > Integer.MAX_VALUE - totalSeconds) {
+            return error(ErrorCode.INVALID_DURATION, "Timer duration is too large.",
+                    "!timer <duration> [label]");
+        }
+        totalSeconds += (int) seconds;
+        if (totalSeconds <= 0) {
             return error(ErrorCode.INVALID_DURATION, "Timer duration must be greater than zero.",
                     "!timer <duration> [label]");
         }
-        if (totalMinutes > Integer.MAX_VALUE / 60) {
-            return error(ErrorCode.INVALID_DURATION, "Timer duration is too large.",
-                    "!timer <duration> [label]");
+        return ParseResult.command(new TimerCommand(totalSeconds, parts.rest));
+    }
+
+    private ParseResult parseAlarm(String arguments) {
+        if (arguments.length() == 0) {
+            return missing("!alarm HH:MM");
         }
-        return ParseResult.command(new TimerCommand(totalMinutes, parts.rest));
+        Parts parts = splitFirstWord(arguments);
+        if (parts.rest.length() != 0) {
+            return error(ErrorCode.UNEXPECTED_ARGUMENT, "!alarm does not take arguments after the time.",
+                    "!alarm HH:MM");
+        }
+        if (!TIME_PATTERN.matcher(parts.first).matches()) {
+            return error(ErrorCode.INVALID_TIME, "Use a 24-hour HH:mm time.", "!alarm HH:MM");
+        }
+        return ParseResult.command(new AlarmCommand(
+                Integer.parseInt(parts.first.substring(0, 2)),
+                Integer.parseInt(parts.first.substring(3, 5))));
     }
 
     private ParseResult parseNote(String arguments) {
@@ -405,6 +433,7 @@ public final class CommandParser {
         CALL,
         TEXT,
         TIMER,
+        ALARM,
         NOTE,
         TODO,
         TODOS,
@@ -580,11 +609,11 @@ public final class CommandParser {
     }
 
     public static final class TimerCommand implements Command {
-        private final int durationMinutes;
+        private final int durationSeconds;
         private final String label;
 
-        private TimerCommand(int durationMinutes, String label) {
-            this.durationMinutes = durationMinutes;
+        private TimerCommand(int durationSeconds, String label) {
+            this.durationSeconds = durationSeconds;
             this.label = label;
         }
 
@@ -593,12 +622,35 @@ public final class CommandParser {
             return Type.TIMER;
         }
 
-        public int getDurationMinutes() {
-            return durationMinutes;
+        public int getDurationSeconds() {
+            return durationSeconds;
         }
 
         public String getLabel() {
             return label;
+        }
+    }
+
+    public static final class AlarmCommand implements Command {
+        private final int hour;
+        private final int minute;
+
+        private AlarmCommand(int hour, int minute) {
+            this.hour = hour;
+            this.minute = minute;
+        }
+
+        @Override
+        public Type getType() {
+            return Type.ALARM;
+        }
+
+        public int getHour() {
+            return hour;
+        }
+
+        public int getMinute() {
+            return minute;
         }
     }
 
