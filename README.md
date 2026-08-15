@@ -1,26 +1,24 @@
-# eLauncher
+# Titan
 
-eLauncher is an extremely lightweight and minimal launcher for Android, based on NoLauncher and inspired by [OLauncher Light](https://github.com/tanujnotes/Ultra/), and OLauncher in general. It is even more barebones than OLauncher Light, and aims to provide only the most basic features.
+Titan is a lightweight, minimal Android launcher with a sparse homescreen, fast app access, and a text-first command-search baseline.
 
-eLauncher favours easy readibility on eInk/ePaper devices, such as the Onyx Boox Note series, and the Bigme HiBreak.
+The launcher is based on NoLauncher and inspired by [OLauncher Light](https://github.com/tanujnotes/Ultra/) and OLauncher.
 
 ## Features
 
-- Extremely lightweight: only 1010KB
-- eInk friendly: uses a light theme by default, fix text size and weight
-- Fuzzy Search: search for apps by typing their name
+- Sparse homescreen and app drawer
+- Fuzzy app search
 - Bottom search bar in app drawer
+- Swipe up from the homescreen to open the app drawer
+- Long press a homescreen app field to assign or rename an app
+- Automatically launch the single matching app result
+- Swipe down for notifications; configure left and right swipe apps in Settings
+- Double tap to open the original launcher
+- Hold empty homescreen space to change the number of app fields
 
-- Homescreen and app drawer: swipe up on homescreen to enter the app drawer
-- Long press an app field on the homescreen to assign an app, app can be renamed
-- Type to search in app drawer, if only one result is left, it is automatically launched (like OLauncher)
-- Gestures: swipe down for notification center, left/right swipe to launch any app (configurable in Settings), double tap to open the original launcher
-- Customizable swipe gestures: pick any app for left and right swipe gestures via Settings
-- Hold on empty space to change the number of apps on homescreen
+## Titan command-search baseline
 
-## Titan command-search V1 contract
-
-The `feat/command-search-v1` branch adds an explicit command mode to the existing app-drawer search field. This section defines the contract before runtime implementation. Machine-readable acceptance cases live in [`app/src/test/resources/me/pompel/elauncher/command-cases.tsv`](app/src/test/resources/me/pompel/elauncher/command-cases.tsv).
+Titan reserves an explicit command mode in the app-drawer search field. This section is the behavioral baseline for runtime implementation; machine-readable acceptance cases live in [`app/src/test/resources/me/pompel/elauncher/command-cases.tsv`](app/src/test/resources/me/pompel/elauncher/command-cases.tsv).
 
 ### Routing and interaction
 
@@ -29,7 +27,7 @@ The `feat/command-search-v1` branch adds an explicit command mode to the existin
 - `!` shows command help and suggestions. Unknown commands show an error and help; they never fall back to app search.
 - Removing the leading `!` restores app-search rows without stale command rows.
 - Typing only updates help, suggestions, previews, or validation messages. Enter or tapping a valid command row explicitly submits it.
-- Command mode never uses eLauncher's automatic single-app launch behavior.
+- Command mode never uses automatic single-app launch behavior.
 
 ### Commands
 
@@ -61,13 +59,9 @@ The `feat/command-search-v1` branch adds an explicit command mode to the existin
 
 ### Local list screens
 
-- `!notes` and `!todos` open separate View-based Activities and Back returns to the launcher.
+- `!notes` and `!todos` open separate View-based Activities and Back returns to Titan.
 - Notes are shown newest first. To-dos show incomplete items first and support completion and deletion.
 - Notes and to-dos remain local to the device. V1 does not add sync, network access, aliases, macros, plugins, shell execution, or arbitrary intents.
-
-## apk size differences with OLauncher Light
-
-This might have been done on purpose, but OLauncher Light uses long deprecated APIs, like ListView to achieve its impressive 23 KB apk size. eLauncher uses RecyclerView, which is much better for performance and memory usage, and also uses many other newer APIs. Thus, the APK size is much larger than with OLauncher Light, but still really small — ~1 MB.
 
 ## Download
 
@@ -75,4 +69,4 @@ You can download the apk file directly from the releases tab and install it manu
 
 ## Contributing
 
-Feel free to contribute if you found a bug or have a way to make the code more efficient or minimal, but please don't add massive new features. If you feel like adding a lot of customization options, widgets, etc. please start your own fork, as the scope of this project is to be as (reasonably) barebones of a launcher as possible.
+Contributions that improve reliability, efficiency, or the focused launcher and command-search experience are welcome. Keep the scope minimal; forks are a better fit for extensive customization, widgets, or unrelated features.

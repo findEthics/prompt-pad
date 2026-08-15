@@ -1,15 +1,17 @@
-eLauncher is an extremely lightweight and minimal launcher for Android inspired by OLauncher Light, and OLauncher in general. It is very barebones and aims to provide only the most basic features.
+Titan is a lightweight, minimal Android launcher with a sparse homescreen, fuzzy app search, and a command-search baseline. It is based on NoLauncher and inspired by OLauncher Light and OLauncher.
 
-Features
+Launcher features
 
-- Extremely lightweight: only 708KB
-- eInk friendly: uses a light theme by default, fix text size and weight
-- Fuzzy Search: search for apps by typing their name
+- Sparse homescreen and app drawer
+- Fuzzy app search
 - Bottom search bar in app drawer
+- Swipe up from the homescreen to open the app drawer
+- Long press a homescreen app field to assign or rename an app
+- Automatically launch the single matching app result
+- Swipe down for notifications; configure left and right swipe apps in Settings
+- Double tap to open the original launcher
+- Hold empty homescreen space to change the number of app fields
 
-- Homescreen and app drawer: swipe up on homescreen to enter the app drawer
-- Long press an app field on the homescreen to assign an app, app can be renamed
-- Type to search in app drawer, if only one result is left, it is automatically launched (like OLauncher)
-- Gestures: swipe down for notification center, left for browser app, right for phone app, double tap to open the original launcher
-- Hold on empty space to change the number of apps on homescreen
+Command-search baseline
 
+The baseline reserves ! in the app-drawer search field for command mode. It defines help, suggestions, validation, and explicit submission for commands such as calling, texting, timers, notes, to-dos, events, torch control, and camera access. Command actions are designed to open prefilled system flows or save data locally instead of acting silently.

@@ -1,10 +1,8 @@
 package me.pompel.elauncher;
 
 import android.annotation.SuppressLint;
-import android.graphics.Typeface;
 import android.text.SpannableString;
 import android.text.Spanned;
-import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -19,7 +17,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 import java.util.Stack;
 
 
@@ -27,17 +24,11 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
     private final ArrayList<App> appList;
     private ArrayList<App> appListFiltered;
     private final RecyclerViewClickListener listener;
-    private Set<String> processPackages;
 
-    public recyclerAdapter(ArrayList<App> appList, Set<String> processPackages, RecyclerViewClickListener listener) {
+    public recyclerAdapter(ArrayList<App> appList, RecyclerViewClickListener listener) {
         this.appList = appList;
         this.appListFiltered = appList;
         this.listener = listener;
-        this.processPackages = processPackages;
-    }
-
-    public void setProcessPackages(Set<String> processPackages) {
-        this.processPackages = processPackages;
     }
 
     private static boolean fuzzyContains(String str, String query) {
@@ -152,17 +143,12 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
     @Override
     public void onBindViewHolder(@NonNull recyclerAdapter.AppViewHolder holder, int position) {
         SpannableString appName = appListFiltered.get(position).appName;
-        String packageId = appListFiltered.get(position).packageId;
         holder.nameText.setText(appName);
 
         // remove all the spans after the string has been set
         Object[] spans = appName.getSpans(0, appName.length(), Object.class);
         for (Object span : spans) {
             appName.removeSpan(span);
-        }
-
-        if (processPackages != null && processPackages.contains(packageId)) {
-            appName.setSpan(new StyleSpan(Typeface.BOLD), 0, appName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
     }
 

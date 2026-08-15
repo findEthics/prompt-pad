@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace 'me.pompel.elauncher'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId "me.pompel.elauncher"
         minSdk 19
-        targetSdk 34
+        targetSdk 36
         versionCode 4
         versionName "2.2"
 

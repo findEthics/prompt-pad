@@ -1,39 +1,33 @@
 package me.pompel.elauncher;
 
 import androidx.annotation.NonNull;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.annotation.SuppressLint;
-import android.app.AppOpsManager;
 import android.app.AlertDialog;
-import android.app.usage.UsageStats;
-import android.app.usage.UsageStatsManager;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.content.res.TypedArray;
-import android.database.Cursor;
 import android.graphics.Typeface;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.window.OnBackInvokedCallback;
-import android.window.OnBackInvokedDispatcher;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.SpannableString;
-import android.text.Spanned;
 import android.text.TextWatcher;
-import android.text.style.StyleSpan;
 import android.transition.Fade;
 import android.transition.Transition;
 import android.transition.TransitionManager;
@@ -42,7 +36,6 @@ import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -50,13 +43,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 public class MainActivity extends AppCompatActivity {
     private static final String NUMBER_OF_APPS = "number_of_apps_preference";
@@ -67,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
     private EditText search;
     private SharedPreferences prefs;
 
-    private static final String ELAUNCHER_PACKAGE = "me.pompel.elauncher";
     private recyclerAdapter adapter;
     private boolean isBackGesture = false;
     private float startX = 0f;
@@ -78,19 +66,13 @@ public class MainActivity extends AppCompatActivity {
     private void loadApps() {
         appList.clear();
 
-        Set<String> activeProcessPackages = listActiveProcessPackages();
-
         PackageManager packageManager = getApplicationContext().getPackageManager();
         Intent intent = new Intent(Intent.ACTION_MAIN, null);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         for (ResolveInfo info : packageManager.queryIntentActivities(intent, 0)) appList.add(new App(info.loadLabel(packageManager).toString(), info.activityInfo.packageName));
-        appList.sort((app1, app2) -> app1.appName.toString().compareToIgnoreCase(app2.appName.toString()));
+        Collections.sort(appList, (app1, app2) -> app1.appName.toString().compareToIgnoreCase(app2.appName.toString()));
         for (App app : appList) {
             appNames.add(app.appName);
-
-            if (activeProcessPackages.contains(app.packageId)) {
-                app.appName.setSpan(new StyleSpan(Typeface.BOLD), 0, app.appName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
         }
     }
 
@@ -108,13 +90,20 @@ public class MainActivity extends AppCompatActivity {
             inputManager.hideSoftInputFromWindow(search.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         } else {
             search.requestFocus();
-            inputManager.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, InputMethodManager.HIDE_NOT_ALWAYS);
+            if (!hasHardwareKeyboard()) {
+                inputManager.showSoftInput(search, InputMethodManager.SHOW_IMPLICIT);
+            }
         }
+    }
+
+    private boolean hasHardwareKeyboard() {
+        Configuration configuration = getResources().getConfiguration();
+        return configuration.keyboard != Configuration.KEYBOARD_NOKEYS
+                && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
     }
 
     private void changeLayout(boolean home, boolean animated) {
         if (!home) loadApps();
-        keyboardAction(home);
         if (animated) {
             Transition transition = new Fade();
             transition.setDuration(300);
@@ -123,39 +112,7 @@ public class MainActivity extends AppCompatActivity {
         }
         findViewById(R.id.HomeScreen).setVisibility(home ? View.VISIBLE : View.GONE);
         findViewById(R.id.AppDrawer).setVisibility(home ? View.GONE : View.VISIBLE);
-
-        Set<String> activeProcessPackages = listActiveProcessPackages();
-
-        if (home) {
-            LinearLayout homescreen = findViewById(R.id.HomeScreen);
-
-            int length = hasUsageStatsPermission() ?
-                    homescreen.getChildCount() :
-                    homescreen.getChildCount()-1;
-
-            for (int i = 0; i < length; i++) {
-                View view = homescreen.getChildAt(i);
-                if (view instanceof TextView) {
-                    TextView textView = (TextView) view;
-                    String packageName = prefs.getString("p" + textView.getTag(), "");
-                    if (activeProcessPackages.contains(packageName)) {
-                        SpannableString spannableAppName = new SpannableString(textView.getText());
-                        spannableAppName.setSpan(new StyleSpan(Typeface.BOLD), 0, spannableAppName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        textView.setText(spannableAppName);
-                    }
-                }
-            }
-
-            if (hasUsageStatsPermission()) {
-                View view = homescreen.getChildAt(homescreen.getChildCount()-1);
-                if (view instanceof TextView) {
-                    TextView textView = (TextView) view;
-                    textView.setText(getNameByPackageName(lastActiveProcessPackage()));
-                }
-            }
-        } else {
-            adapter.setProcessPackages(activeProcessPackages);
-        }
+        keyboardAction(home);
     }
 
     private void openAppWithIntent(Intent intent, boolean change) {
@@ -167,13 +124,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void safeStartActivity(Intent intent) {
         if (intent != null) startActivity(intent);
-    }
-
-    // check if you have USAGE_STATS permission
-    private boolean hasUsageStatsPermission() {
-        AppOpsManager appOps = (AppOpsManager) getSystemService(Context.APP_OPS_SERVICE);
-        int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), getPackageName());
-        return mode == AppOpsManager.MODE_ALLOWED;
     }
 
     @Override
@@ -219,8 +169,7 @@ public class MainActivity extends AppCompatActivity {
         return super.dispatchTouchEvent(ev);
     }
 
-    @Override 
-    public void onBackPressed() { 
+    private void handleBack() {
         if (isBackGesture) {
             // Block back gestures - do nothing
         } else if (isLeftEdge) {
@@ -239,8 +188,6 @@ public class MainActivity extends AppCompatActivity {
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        BigmeShims.registerUnlockReceiver(this);
-
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         // Get system dark mode as default
@@ -256,31 +203,31 @@ public class MainActivity extends AppCompatActivity {
             setTheme(R.style.AppTheme);
         }
 
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
 
-        // if it does not have USAGE_STATS and it's the first launch, open settings
-        if (!hasUsageStatsPermission() && !prefs.getBoolean("firstLaunch", false)) {
-            Intent usageAccessIntent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
-            usageAccessIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(usageAccessIntent);
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.putBoolean("firstLaunch", true);
-            editor.apply();
-        }
+        View mainLayout = findViewById(R.id.MainLayout);
+        ViewCompat.setOnApplyWindowInsetsListener(mainLayout, (view, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
+                    | WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.ime());
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(mainLayout);
 
-        BigmeShims.queryLauncherProvider(this);
-        Window window = getWindow();
-        //window.addFlags(FLAG_LAYOUT_NO_LIMITS);
-        //window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        window.setStatusBarColor(getColorFromAttr(androidx.appcompat.R.attr.background));
-        window.setNavigationBarColor(getColorFromAttr(androidx.appcompat.R.attr.background));
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBack();
+            }
+        });
 
         appList = new ArrayList<>();
         appNames = new ArrayList<>();
         loadApps();
 
         RecyclerView recyclerView = findViewById(R.id.recycler_view);
-        adapter = new recyclerAdapter(appList, listActiveProcessPackages(), new recyclerAdapter.RecyclerViewClickListener() {
+        adapter = new recyclerAdapter(appList, new recyclerAdapter.RecyclerViewClickListener() {
             @Override
             public void onClick(App app) {
                 openAppWithIntent(getPackageManager().getLaunchIntentForPackage(app.packageId), true);
@@ -350,7 +297,7 @@ public class MainActivity extends AppCompatActivity {
             TextView textView = new TextView(this);
             textView.setTextColor(getColorFromAttr(androidx.appcompat.R.attr.colorPrimary));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 32);
-            textView.setTypeface(Typeface.create(!hasUsageStatsPermission() ? "sans-serif" : "sans-serif-light", Typeface.NORMAL));
+            textView.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
             textView.setPadding(0, 0, 0, 50);
             textView.setText(prefs.getString(Integer.toString(i), "App"));
             textView.setTag(i);
@@ -385,68 +332,13 @@ public class MainActivity extends AppCompatActivity {
             homescreen.addView(textView);
         }
 
-        if (hasUsageStatsPermission()) {
-            TextView textView = new TextView(this);
-            textView.setTextColor(getColorFromAttr(androidx.appcompat.R.attr.colorPrimary));
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 32);
-            textView.setTypeface(Typeface.create("sans-serif", Typeface.ITALIC));
-            textView.setPadding(0, 0, 0, 50);
-            String lastAppName = getNameByPackageName(lastActiveProcessPackage());
-            textView.setText(lastAppName != null ? lastAppName : "Last App");
-            textView.setTag(i);
-            textView.setLayoutParams(params);
-            textView.setOnClickListener(v -> {
-                String pkg = lastActiveProcessPackage();
-                openAppWithIntent(getPackageManager().getLaunchIntentForPackage(pkg), true);
-            });
-            homescreen.addView(textView);
-        }
-
         new SwipeListener(homescreen);
 
     }
 
-    private void homeUpdateUsage() {
-        LinearLayout homescreen = findViewById(R.id.HomeScreen);
-        Set<String> activeProcessPackages = listActiveProcessPackages();
-
-        int length = hasUsageStatsPermission() ?
-                homescreen.getChildCount() :
-                homescreen.getChildCount()-1;
-
-        for (int i = 0; i < length; i++) {
-            View view = homescreen.getChildAt(i);
-            if (view instanceof TextView) {
-                TextView textView = (TextView) view;
-                String packageName = prefs.getString("p" + textView.getTag(), "");
-                if (activeProcessPackages.contains(packageName)) {
-                    SpannableString spannableAppName = new SpannableString(textView.getText());
-                    spannableAppName.setSpan(new StyleSpan(Typeface.BOLD), 0, spannableAppName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    textView.setText(spannableAppName);
-                }
-            }
-        }
-
-        if (hasUsageStatsPermission()) {
-            View view = homescreen.getChildAt(homescreen.getChildCount()-1);
-            if (view instanceof TextView) {
-                TextView textView = (TextView) view;
-                textView.setText(getNameByPackageName(lastActiveProcessPackage()));
-            }
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        BigmeShims.queryLauncherProvider(this);
-        homeUpdateUsage();
-    }
-
-    private boolean canMakePhoneCall() {
+    private boolean canOpenDialer() {
         PackageManager packageManager = getPackageManager();
-        Intent intent = new Intent(Intent.ACTION_CALL);
-        intent.setData(Uri.parse("tel:1234567890"));
+        Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:"));
         return intent.resolveActivity(packageManager) != null;
     }
 
@@ -474,7 +366,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private Intent getDefaultLeftGestureIntent() {
-        return new Intent(canMakePhoneCall() ? Intent.ACTION_DIAL : MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
+        return canOpenDialer()
+                ? new Intent(Intent.ACTION_DIAL, Uri.parse("tel:"))
+                : new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
     }
 
     private List<ResolveInfo> getLaunchersResolveInfos() {
@@ -496,15 +390,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return launchers;
-    }
-
-    private String getDefaultPhoneAppPackage() {
-        Intent phoneIntent = new Intent(Intent.ACTION_DIAL);
-        ResolveInfo resolveInfo = getPackageManager().resolveActivity(phoneIntent, PackageManager.MATCH_DEFAULT_ONLY);
-
-        if (resolveInfo == null) return null;
-
-        return resolveInfo.activityInfo.packageName;
     }
 
     public Intent getLastLauncherIntent() {
@@ -568,7 +453,6 @@ public class MainActivity extends AppCompatActivity {
                             catch (Exception e) { Log.d(App.class.toString(), SwipeListener.class+": onFling", e); }
                         else {
                             changeLayout(false, true);
-                            keyboardAction(false);
                         }
                     }
                     return true;
@@ -591,114 +475,6 @@ public class MainActivity extends AppCompatActivity {
             view.setOnTouchListener(this);
         }
         @Override public boolean onTouch (View view, MotionEvent motionEvent) { view.performClick(); return gestureDetector.onTouchEvent(motionEvent); }
-    }
-
-    private Set<String> listActiveProcessPackages() {
-        Set<String> activePackages = new HashSet<>();
-        UsageStatsManager mUsageStatsManager = (UsageStatsManager)getSystemService(Context.USAGE_STATS_SERVICE);
-        long endTime = System.currentTimeMillis();
-        long beginTime = endTime - 1000*60*60; // last 60 minutes
-
-        // We get usage stats for the last day
-        List<UsageStats> stats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, beginTime, endTime);
-
-        // Sort the stats by the last time used
-        if(stats != null)
-        {
-            SortedMap<Long,UsageStats> mySortedMap = new TreeMap<Long,UsageStats>();
-            for (UsageStats usageStats : stats)
-            {
-                if (usageStats.getLastTimeUsed() < beginTime) continue;
-                mySortedMap.put(usageStats.getLastTimeUsed(), usageStats);
-            }
-            if(!mySortedMap.isEmpty())
-            {
-                // topActivity =  mySortedMap.get(mySortedMap.lastKey()).getPackageName();
-                // iterate over mySortedMap
-                for (UsageStats usageStats : mySortedMap.values())
-                {
-                    activePackages.add(usageStats.getPackageName());
-                }
-            }
-        }
-
-        return activePackages;
-    }
-
-    private List<String> getHomescreenPackages() {
-        int len = prefs.getInt(NUMBER_OF_APPS, 8);
-        List<String> homescreenPackages = new LinkedList<>();
-
-        for (int i = 0; i < len; i++) {
-            String pkg = prefs.getString("p" + i, "");
-            if (!pkg.isEmpty()) {
-                homescreenPackages.add(pkg);
-            }
-        }
-
-        return homescreenPackages;
-    }
-
-    private String getNameByPackageName(String pkg) {
-        for (App app : appList) {
-            if (app.packageId.equals(pkg))
-                return app.appName.toString();
-        }
-
-        return null;
-    }
-
-    private String lastActiveProcessPackage() {
-        Set<String> excludePackages = new HashSet<>();
-
-        excludePackages.add(getDefaultBrowserPackage());
-        getLaunchersResolveInfos().forEach(resolveInfo -> excludePackages.add(resolveInfo.activityInfo.packageName));
-        excludePackages.add(getDefaultPhoneAppPackage());
-        excludePackages.add(ELAUNCHER_PACKAGE);
-        excludePackages.addAll(getHomescreenPackages());
-        excludePackages.add("com.android.settings");
-        // BigMe specific middlewares
-        excludePackages.addAll(
-                Arrays.asList(
-                        "com.xrz.appmanager",
-                        "com.xrz.standby",
-                        "com.xrz.voice.note",
-                        "com.xrz.ai",
-                        "com.xrz.bookmall",
-                        "com.tencent.weread.eink",
-                        "com.iflytek.speechcloud",
-                        "com.xrz.ebook",
-                        "com.xrz.ebook.launcher",
-                        "com.xrz.hoverballdemo",
-                        "com.xrz.res.service",
-                        "com.xrz.settings"));
-
-        UsageStatsManager mUsageStatsManager = (UsageStatsManager)getSystemService(Context.USAGE_STATS_SERVICE);
-        long endTime = System.currentTimeMillis();
-        long beginTime = endTime - 1000*60*120; // last 2 hours
-
-        // We get usage stats for the last day
-        List<UsageStats> stats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, beginTime, endTime);
-
-        // Sort the stats by the last time used
-        if(stats != null)
-        {
-            SortedMap<Long,UsageStats> mySortedMap = new TreeMap<Long,UsageStats>();
-            for (UsageStats usageStats : stats)
-            {
-                if (usageStats.getLastTimeUsed() < beginTime) continue;
-                if (excludePackages.contains(usageStats.getPackageName())) continue;
-                if (getPackageManager().getLaunchIntentForPackage(usageStats.getPackageName()) == null) continue;
-                mySortedMap.put(usageStats.getLastTimeUsed(),usageStats);
-            }
-            if(!mySortedMap.isEmpty())
-            {
-                UsageStats last = mySortedMap.get(mySortedMap.lastKey());
-                return last != null ? last.getPackageName() : "";
-            }
-        }
-
-        return "";
     }
 
     private int getColorFromAttr(int attr) {

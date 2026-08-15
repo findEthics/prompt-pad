@@ -6,8 +6,13 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 
 import androidx.annotation.NonNull;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.preference.PreferenceFragmentCompat;
 
 public class SettingsActivity extends AppCompatActivity {
@@ -18,7 +23,22 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.settings_activity);
+        android.view.View settingsRoot = findViewById(R.id.settings_root);
+        ViewCompat.setOnApplyWindowInsetsListener(settingsRoot, (view, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
+                    | WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.ime());
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(settingsRoot);
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                restartApplication();
+            }
+        });
         if (savedInstanceState == null) {
             getSupportFragmentManager()
                     .beginTransaction()
@@ -55,11 +75,6 @@ public class SettingsActivity extends AppCompatActivity {
         public void onLongPress(@NonNull MotionEvent e) {
             restartApplication();
         }
-    }
-
-    @Override
-    public void onBackPressed() {
-        restartApplication();
     }
 
     private void restartApplication() {

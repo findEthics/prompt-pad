@@ -15,6 +15,7 @@ import androidx.preference.Preference;
 import androidx.preference.PreferenceViewHolder;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class GesturePreference extends Preference {
@@ -113,7 +114,7 @@ public class GesturePreference extends Preference {
             apps.add(new AppInfo(name, pkg));
         }
 
-        apps.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+        Collections.sort(apps, (a, b) -> a.name.compareToIgnoreCase(b.name));
         return apps;
     }
 
