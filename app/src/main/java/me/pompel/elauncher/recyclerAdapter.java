@@ -24,11 +24,23 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
     private final ArrayList<App> appList;
     private ArrayList<App> appListFiltered;
     private final RecyclerViewClickListener listener;
+    private String activeQuery = "";
+    private boolean filteringEnabled = true;
 
     public recyclerAdapter(ArrayList<App> appList, RecyclerViewClickListener listener) {
         this.appList = appList;
         this.appListFiltered = appList;
         this.listener = listener;
+    }
+
+    public void filter(CharSequence query) {
+        filteringEnabled = true;
+        activeQuery = query.toString();
+        getFilter().filter(query);
+    }
+
+    public void pauseFiltering() {
+        filteringEnabled = false;
     }
 
     private static boolean fuzzyContains(String str, String query) {
@@ -68,6 +80,7 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
             @SuppressLint("NotifyDataSetChanged")
             @Override
             protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
+                if (!filteringEnabled || !activeQuery.equals(charSequence.toString())) return;
                 appListFiltered = (ArrayList<App>)filterResults.values;
 
                 for (App app : appListFiltered) {

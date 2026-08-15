@@ -240,6 +240,7 @@ public class MainActivity extends AppCompatActivity {
                 openAppWithIntent(intent, false);
             }
         });
+        CommandAdapter commandAdapter = new CommandAdapter();
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
@@ -284,7 +285,20 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                adapter.getFilter().filter(charSequence);
+                CommandQueryClassifier.Result result = CommandQueryClassifier.classify(charSequence.toString());
+                if (result.getMode() == CommandQueryClassifier.Mode.COMMAND_SEARCH) {
+                    // Keep delayed app-filter results from auto-launching while commands are shown.
+                    adapter.pauseFiltering();
+                    if (recyclerView.getAdapter() != commandAdapter) {
+                        recyclerView.setAdapter(commandAdapter);
+                    }
+                    commandAdapter.submit(result);
+                } else {
+                    if (recyclerView.getAdapter() != adapter) {
+                        recyclerView.setAdapter(adapter);
+                    }
+                    adapter.filter(result.getAppQuery());
+                }
             }
         });
 
