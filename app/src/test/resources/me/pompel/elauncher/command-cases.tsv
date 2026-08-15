@@ -1,0 +1,74 @@
+id	input	trigger	context	mode	state	command	normalized_arguments	expected_effect	expected_message
+route-empty	<empty>	INPUT_CHANGED	DEFAULT	APP_SEARCH	APP_RESULTS	-	-	FILTER_APPS	Show all installed apps
+route-app-query	gmail	INPUT_CHANGED	DEFAULT	APP_SEARCH	APP_RESULTS	-	-	FILTER_APPS	Use existing fuzzy app search
+route-leading-space	 !timer 10m	INPUT_CHANGED	DEFAULT	APP_SEARCH	APP_RESULTS	-	-	FILTER_APPS	Whitespace prevents command mode
+route-bare-prefix	!	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	COMMAND_HELP	-	-	SHOW_HELP	Show command help and suggestions
+route-prefix-removed	mail	INPUT_CHANGED	DEFAULT	APP_SEARCH	APP_RESULTS	-	-	FILTER_APPS	Restore app rows after removing the prefix
+help-case-insensitive	!HeLp	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	HELP	-	NONE	Help command is ready to submit
+help-submit	!HeLp	SUBMIT	DEFAULT	COMMAND_SEARCH	SUCCESS	HELP	-	SHOW_HELP	Show command help
+unknown-command	!unknown	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	UNKNOWN_COMMAND	UNKNOWN	-	SHOW_HELP	Unknown command; show help
+call-raw-preview	!call +1 (555) 123-4567	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	CALL	recipient=+15551234567	NONE	Dialer preview is ready
+call-raw-submit	!call +1 (555) 123-4567	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	CALL	recipient=+15551234567	OPEN_DIALER	Open prefilled dialer without calling
+call-shortest-number	!call 1234567	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	CALL	recipient=1234567	NONE	Seven-digit number is valid
+call-contact-longest-prefix	!call Ada Lovelace	INPUT_CHANGED	CONTACTS_GRANTED_SINGLE	COMMAND_SEARCH	PREVIEW	CALL	recipient=Ada Lovelace	NONE	Resolve the longest contact-name prefix
+call-contact-case-insensitive	!call ADA lovelace	INPUT_CHANGED	CONTACTS_GRANTED_SINGLE	COMMAND_SEARCH	PREVIEW	CALL	recipient=Ada Lovelace	NONE	Match contact names case-insensitively
+call-contact-ambiguous	!call Ada	INPUT_CHANGED	CONTACTS_GRANTED_AMBIGUOUS	COMMAND_SEARCH	CONTACT_CHOICE	CALL	recipient=Ada	SHOW_CONTACT_CHOICES	Choose a matching contact
+call-contact-multiple-numbers	!call Ada Lovelace	INPUT_CHANGED	CONTACTS_GRANTED_MULTIPLE_NUMBERS	COMMAND_SEARCH	CONTACT_CHOICE	CALL	recipient=Ada Lovelace	SHOW_CONTACT_CHOICES	Choose a contact number
+call-contact-miss	!call Missing Person	INPUT_CHANGED	CONTACTS_GRANTED_NONE	COMMAND_SEARCH	VALIDATION_ERROR	CALL	recipient=Missing Person	SHOW_SYNTAX	No matching contact
+call-contacts-denied	!call Ada Lovelace	INPUT_CHANGED	CONTACTS_DENIED	COMMAND_SEARCH	PERMISSION_DENIED	CALL	recipient=Ada Lovelace	OFFER_SETTINGS	Contacts unavailable; use a number or open Settings
+call-raw-contacts-denied	!call 5551234567	INPUT_CHANGED	CONTACTS_DENIED	COMMAND_SEARCH	PREVIEW	CALL	recipient=5551234567	NONE	Raw number works without Contacts permission
+call-raw-contacts-denied-submit	!call 5551234567	SUBMIT	CONTACTS_DENIED	COMMAND_SEARCH	CONFIRMATION	CALL	recipient=5551234567	OPEN_DIALER	Open a raw number in the prefilled dialer
+call-plus-raw-contacts-denied	!call +15551234567	INPUT_CHANGED	CONTACTS_DENIED	COMMAND_SEARCH	PREVIEW	CALL	recipient=+15551234567	NONE	Raw number works without Contacts permission
+call-plus-raw-contacts-denied-submit	!call +15551234567	SUBMIT	CONTACTS_DENIED	COMMAND_SEARCH	CONFIRMATION	CALL	recipient=+15551234567	OPEN_DIALER	Open a raw number in the prefilled dialer
+call-missing-recipient	!call	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	CALL	-	SHOW_SYNTAX	Use !call <contact-or-number>
+call-handler-unavailable	!call +15551234567	SUBMIT	DIALER_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	CALL	recipient=+15551234567	SHOW_UNAVAILABLE	No dialer is available
+text-raw-preview	!text +15551234567 hello there	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TEXT	recipient=+15551234567;message=hello there	NONE	SMS preview is ready
+text-longest-number	!text +123456789012345 hello there	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TEXT	recipient=+123456789012345;message=hello there	NONE	Fifteen-digit number is valid
+text-contact-prefix	!text Ada Lovelace hello there	INPUT_CHANGED	CONTACTS_GRANTED_SINGLE	COMMAND_SEARCH	PREVIEW	TEXT	recipient=Ada Lovelace;message=hello there	NONE	Use the longest contact-name prefix
+text-missing-message	!text +15551234567	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	TEXT	recipient=+15551234567	SHOW_SYNTAX	Use !text <contact-or-number> <message>
+text-raw-contacts-denied	!text +15551234567 hello there	INPUT_CHANGED	CONTACTS_DENIED	COMMAND_SEARCH	PREVIEW	TEXT	recipient=+15551234567;message=hello there	NONE	Raw number works without Contacts permission
+text-raw-contacts-denied-submit	!text +15551234567 hello there	SUBMIT	CONTACTS_DENIED	COMMAND_SEARCH	CONFIRMATION	TEXT	recipient=+15551234567;message=hello there	OPEN_SMS_COMPOSER	Open a raw number in the prefilled SMS composer
+text-bare-raw-contacts-denied	!text 5551234567 hello there	INPUT_CHANGED	CONTACTS_DENIED	COMMAND_SEARCH	PREVIEW	TEXT	recipient=5551234567;message=hello there	NONE	Raw number works without Contacts permission
+text-bare-raw-contacts-denied-submit	!text 5551234567 hello there	SUBMIT	CONTACTS_DENIED	COMMAND_SEARCH	CONFIRMATION	TEXT	recipient=5551234567;message=hello there	OPEN_SMS_COMPOSER	Open a raw number in the prefilled SMS composer
+text-submit	!text +15551234567 hello there	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	TEXT	recipient=+15551234567;message=hello there	OPEN_SMS_COMPOSER	Open prefilled SMS composer without sending
+text-handler-unavailable	!text +15551234567 hello	SUBMIT	SMS_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	TEXT	recipient=+15551234567;message=hello	SHOW_UNAVAILABLE	No SMS app is available
+timer-missing-duration	!timer	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	TIMER	-	SHOW_SYNTAX	Use !timer <duration> [label]
+timer-hours-preview	!timer 1h	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TIMER	duration=60m	NONE	One-hour timer preview is ready
+timer-valid-preview	!timer 1h30m Tea	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TIMER	duration=90m;label=Tea	NONE	Timer preview is ready
+timer-zero-duration	!timer 0m	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ERROR	TIMER	duration=0m	SHOW_SYNTAX	Duration must be greater than zero
+timer-invalid-duration	!timer 10x	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ERROR	TIMER	duration=10x	SHOW_SYNTAX	Use durations such as 10m, 1h, or 1h30m
+timer-submit	!timer 10m	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	TIMER	duration=10m	OPEN_TIMER	Open the system timer form
+timer-handler-unavailable	!timer 10m	SUBMIT	CLOCK_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	TIMER	duration=10m	SHOW_UNAVAILABLE	No Clock app is available
+todo-missing-text	!todo	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	TODO	-	SHOW_SYNTAX	Use !todo <text>
+todo-preview	!todo Buy batteries	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TODO	text=Buy batteries	NONE	To-do preview is ready
+todo-submit	!todo Buy batteries	SUBMIT	DEFAULT	COMMAND_SEARCH	SUCCESS	TODO	text=Buy batteries	SAVE_TODO	Save a local incomplete to-do
+todos-preview	!todos	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TODOS	-	NONE	To-do list is ready to open
+todos-submit	!todos	SUBMIT	DEFAULT	COMMAND_SEARCH	SUCCESS	TODOS	-	OPEN_TODOS	Open the local to-do Activity
+todos-list-order	!todos	LIST_OPENED	TODOS_EXIST	COMMAND_SEARCH	SUCCESS	TODOS	order=incomplete_first	OPEN_TODOS	Show incomplete to-dos first
+todos-list-complete	!todos	LIST_ACTION	TODO_ITEM_EXISTS	COMMAND_SEARCH	SUCCESS	TODOS	-	COMPLETE_TODO	Mark the selected to-do complete
+todos-list-delete	!todos	LIST_ACTION	TODO_ITEM_EXISTS	COMMAND_SEARCH	SUCCESS	TODOS	-	DELETE_TODO	Delete the selected to-do
+todos-list-back	!todos	BACK	TODOS_OPEN	COMMAND_SEARCH	SUCCESS	TODOS	-	RETURN_TO_LAUNCHER	Back returns to launcher
+note-missing-text	!note	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	NOTE	-	SHOW_SYNTAX	Use !note <text>
+note-preview	!note Meter reading 42	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	NOTE	text=Meter reading 42	NONE	Note preview is ready
+note-submit	!note Meter reading 42	SUBMIT	DEFAULT	COMMAND_SEARCH	SUCCESS	NOTE	text=Meter reading 42	SAVE_NOTE	Save a timestamped local note
+notes-preview	!notes	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	NOTES	-	NONE	Notes list is ready to open
+notes-submit	!notes	SUBMIT	DEFAULT	COMMAND_SEARCH	SUCCESS	NOTES	-	OPEN_NOTES	Open the local notes Activity
+notes-list-order	!notes	LIST_OPENED	NOTES_EXIST	COMMAND_SEARCH	SUCCESS	NOTES	order=newest_first	OPEN_NOTES	Show notes newest first
+notes-list-delete	!notes	LIST_ACTION	NOTE_ITEM_EXISTS	COMMAND_SEARCH	SUCCESS	NOTES	-	DELETE_NOTE	Delete the selected note
+notes-list-back	!notes	BACK	NOTES_OPEN	COMMAND_SEARCH	SUCCESS	NOTES	-	RETURN_TO_LAUNCHER	Back returns to launcher
+event-valid-preview	!event today 14:30 Project review	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	EVENT	date=today;time=14:30;title=Project review;duration=30m;timezone=local	NONE	Calendar preview is ready
+event-iso-date-preview	!event 2026-08-16 14:30 Project review	INPUT_CHANGED	FUTURE_EVENT	COMMAND_SEARCH	PREVIEW	EVENT	date=2026-08-16;time=14:30;title=Project review;duration=30m;timezone=local	NONE	Valid ISO date is ready for Calendar
+event-invalid-date	!event 2026-02-30 14:30 Project review	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ERROR	EVENT	date=2026-02-30;time=14:30;title=Project review;duration=30m;timezone=local	SHOW_SYNTAX	Use today, tomorrow, or a valid YYYY-MM-DD date
+event-invalid-time	!event today 25:00 Project review	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ERROR	EVENT	date=today;time=25:00;title=Project review;duration=30m;timezone=local	SHOW_SYNTAX	Use a 24-hour HH:mm time
+event-past-time	!event today 09:00 Project review	INPUT_CHANGED	PAST_EVENT	COMMAND_SEARCH	VALIDATION_ERROR	EVENT	date=today;time=09:00;title=Project review;duration=30m;timezone=local	SHOW_SYNTAX	Event start time must be in the future
+event-missing-title	!event today 14:30	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	EVENT	date=today;time=14:30;duration=30m;timezone=local	SHOW_SYNTAX	Use !event <date> <time> <title>
+event-submit	!event tomorrow 14:30 Project review	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	EVENT	date=tomorrow;time=14:30;title=Project review;duration=30m;timezone=local	OPEN_CALENDAR	Open prefilled Calendar event without inserting
+event-handler-unavailable	!event tomorrow 14:30 Project review	SUBMIT	CALENDAR_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	EVENT	date=tomorrow;time=14:30;title=Project review;duration=30m;timezone=local	SHOW_UNAVAILABLE	No Calendar app is available
+torch-preview	!torch	INPUT_CHANGED	TORCH_AVAILABLE	COMMAND_SEARCH	PREVIEW	TORCH	-	NONE	Torch command is ready to submit
+torch-turn-on	!torch	SUBMIT	TORCH_OFF	COMMAND_SEARCH	SUCCESS	TORCH	-	TOGGLE_TORCH	Report torch on
+torch-turn-off	!torch	SUBMIT	TORCH_ON	COMMAND_SEARCH	SUCCESS	TORCH	-	TOGGLE_TORCH	Report torch off
+torch-unavailable	!torch	SUBMIT	TORCH_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	TORCH	-	SHOW_UNAVAILABLE	No rear torch is available
+torch-denied	!torch	SUBMIT	CAMERA_DENIED	COMMAND_SEARCH	PERMISSION_DENIED	TORCH	-	OFFER_SETTINGS	Camera permission is required for torch
+camera-preview	!camera	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	CAMERA	-	NONE	Camera command is ready to submit
+camera-submit	!camera	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	CAMERA	-	OPEN_CAMERA	Open the system camera
+camera-handler-unavailable	!camera	SUBMIT	CAMERA_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	CAMERA	-	SHOW_UNAVAILABLE	No Camera app is available
