@@ -35,6 +35,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.KeyEvent;
 import android.view.inputmethod.InputMethodManager;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -49,7 +51,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String HERMES_SETTINGS_MESSAGE = "Set the Hermes Telegram bot in Settings.";
     private ArrayList<App> appList;
     private EditText search;
-    private TextView drawerEmpty;
+    private View drawerEmpty;
+    private TextView savePill;
     private SharedPreferences prefs;
 
     private recyclerAdapter adapter;
@@ -63,6 +66,20 @@ public class MainActivity extends AppCompatActivity {
     private String pendingPermissionCommand;
     private long searchRevision;
     private boolean commandEnterDown;
+
+    private final Runnable hideSavePill = () -> {
+        savePill.animate()
+                .translationY(dp(16))
+                .alpha(0f)
+                .setDuration(220)
+                .setInterpolator(new AccelerateInterpolator())
+                .withEndAction(() -> {
+                    savePill.setVisibility(View.GONE);
+                    savePill.setTranslationY(0f);
+                    changeLayout(true, true);
+                })
+                .start();
+    };
 
     private static final int CONTACTS_PERMISSION_REQUEST = 1001;
     private static final int CAMERA_PERMISSION_REQUEST = 1002;
@@ -167,6 +184,7 @@ public class MainActivity extends AppCompatActivity {
         loadApps();
         search = findViewById(R.id.search);
         drawerEmpty = findViewById(R.id.drawer_empty);
+        savePill = findViewById(R.id.save_pill);
         contactsResolver = new ContactsResolver(this);
         torchController = new TorchController(this);
         SharedPreferences commandPreferences = getSharedPreferences("command_data", MODE_PRIVATE);
@@ -424,12 +442,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void executeCommand(CommandParser.Command command, String query) {
         switch (command.getType()) {
-            case HELP:
-                if (recyclerView.getAdapter() != commandAdapter) {
-                    recyclerView.setAdapter(commandAdapter);
-                }
-                commandAdapter.submit(CommandQueryClassifier.classify("!"));
-                return;
             case CALL:
                 executeCall((CommandParser.CallCommand) command, query);
                 return;
@@ -453,20 +465,25 @@ public class MainActivity extends AppCompatActivity {
                 return;
             case ALARM:
                 CommandParser.AlarmCommand alarm = (CommandParser.AlarmCommand) command;
-                launchCommandIntent(CommandIntentFactory.setAlarm(alarm.getHour(), alarm.getMinute()),
-                        "No Clock app is available.");
+                try {
+                    startActivity(CommandIntentFactory.setAlarm(alarm.getHour(), alarm.getMinute()));
+                    showSavedPill("alarm set");
+                } catch (ActivityNotFoundException | SecurityException exception) {
+                    Log.w(MainActivity.class.getSimpleName(), "Unable to set alarm", exception);
+                    showSavedPill("try again");
+                }
                 return;
             case TODO:
-                Todo todo = todosRepository.add(((CommandParser.TodoCommand) command).getText());
-                showCommandStatus("To-do saved", todo.getText());
+                todosRepository.add(((CommandParser.TodoCommand) command).getText());
+                showSavedPill("added to todos");
                 return;
             case TODOS:
                 launchCommandIntent(new Intent(this, TodosActivity.class),
                         "The to-do list is unavailable.");
                 return;
             case NOTE:
-                Note note = notesRepository.add(((CommandParser.NoteCommand) command).getText());
-                showCommandStatus("Note saved", note.getText());
+                notesRepository.add(((CommandParser.NoteCommand) command).getText());
+                showSavedPill("added to notes");
                 return;
             case NOTES:
                 launchCommandIntent(new Intent(this, NotesActivity.class),
@@ -639,6 +656,27 @@ public class MainActivity extends AppCompatActivity {
             recyclerView.setAdapter(commandAdapter);
         }
         commandAdapter.showStatus(title, detail);
+    }
+
+    private void showSavedPill(String message) {
+        savePill.removeCallbacks(hideSavePill);
+        savePill.animate().cancel();
+        findViewById(R.id.AppDrawer).setVisibility(View.GONE);
+        savePill.setText(message);
+        savePill.setVisibility(View.VISIBLE);
+        savePill.setTranslationY(dp(16));
+        savePill.setAlpha(0f);
+        savePill.animate()
+                .translationY(0f)
+                .alpha(1f)
+                .setDuration(220)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+        savePill.postDelayed(hideSavePill, 1200);
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     private void showCommandPermissionStatus(String title, String detail) {

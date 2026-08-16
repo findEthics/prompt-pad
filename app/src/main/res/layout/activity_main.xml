@@ -9,35 +9,66 @@
     android:background="?attr/android:colorBackground"
     tools:context=".MainActivity">
 
-    <LinearLayout
+    <FrameLayout
         android:id="@+id/HomeScreen"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical"
         android:animateLayoutChanges="false"
         >
 
-        <TextClock
-            android:id="@+id/home_clock"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:format12Hour="HH:mm"
-            android:format24Hour="HH:mm"
-            android:textColor="?attr/colorPrimary"
-            android:textSize="72sp"
-            app:fontFamily="@font/poppins" />
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical">
 
-        <TextClock
-            android:id="@+id/home_date"
+            <TextClock
+                android:id="@+id/home_clock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:format12Hour="HH:mm"
+                android:format24Hour="HH:mm"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="72sp"
+                app:fontFamily="@font/poppins" />
+
+            <TextClock
+                android:id="@+id/home_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:format12Hour="d MMMM"
+                android:format24Hour="d MMMM"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="24sp"
+                app:fontFamily="@font/poppins" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:format12Hour="d MMMM"
-            android:format24Hour="d MMMM"
-            android:textColor="?attr/colorPrimary"
-            android:textSize="24sp"
-            app:fontFamily="@font/poppins" />
-    </LinearLayout>
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="24dp"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/drawer_empty"
+                android:textColor="?attr/colorControlNormal"
+                android:textSize="12sp"
+                app:fontFamily="@font/poppins" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/command_hint"
+                android:textColor="?attr/colorControlNormal"
+                android:textSize="9sp"
+                app:fontFamily="@font/poppins" />
+        </LinearLayout>
+    </FrameLayout>
 
     <RelativeLayout
         android:id="@+id/AppDrawer"
@@ -53,15 +84,30 @@
             android:layout_height="match_parent"
             android:layout_above="@id/search" />
 
-        <TextView
+        <LinearLayout
             android:id="@+id/drawer_empty"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:text="@string/drawer_empty"
-            android:textColor="?attr/colorControlNormal"
-            android:textSize="24sp"
-            app:fontFamily="@font/poppins" />
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/drawer_empty"
+                android:textColor="?attr/colorControlNormal"
+                android:textSize="24sp"
+                app:fontFamily="@font/poppins" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/command_hint"
+                android:textColor="?attr/colorControlNormal"
+                android:textSize="12sp"
+                app:fontFamily="@font/poppins" />
+        </LinearLayout>
 
         <EditText
             android:id="@+id/search"
@@ -84,4 +130,24 @@
             android:textSize="32sp" />
 
     </RelativeLayout>
+
+    <TextView
+        android:id="@+id/save_pill"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="62dp"
+        android:background="@drawable/save_pill_background"
+        android:fontFamily="@font/poppins"
+        android:gravity="center"
+        android:minHeight="48dp"
+        android:paddingStart="24dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="10dp"
+        android:textColor="?attr/colorPrimary"
+        android:textSize="16sp"
+        android:visibility="gone" />
 </FrameLayout>

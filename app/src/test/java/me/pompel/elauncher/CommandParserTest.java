@@ -16,8 +16,7 @@ public class CommandParserTest {
     public void parsesEverySupportedArgumentFreeCommand() {
         CommandParser parser = parserAt("2026-08-15 10:00");
 
-        assertCommand(parser.parse("!help"), CommandParser.Type.HELP,
-                CommandParser.ZeroPayloadCommand.class);
+        assertError(parser.parse("!help"), CommandParser.ErrorCode.UNKNOWN_COMMAND);
         assertCommand(parser.parse("!todos"), CommandParser.Type.TODOS,
                 CommandParser.ZeroPayloadCommand.class);
         assertCommand(parser.parse("!notes"), CommandParser.Type.NOTES,
@@ -149,20 +148,23 @@ public class CommandParserTest {
     }
 
     @Test
-    public void parsesStrictTwentyFourHourAlarms() {
+    public void parsesFlexibleTwentyFourHourAlarms() {
         CommandParser parser = parserAt("2026-08-15 10:00");
 
         CommandParser.AlarmCommand midnight = (CommandParser.AlarmCommand) parser
                 .parse("!alarm 00:00").getCommand();
+        CommandParser.AlarmCommand singleDigitHour = (CommandParser.AlarmCommand) parser
+                .parse("!alarm 7:05").getCommand();
         CommandParser.AlarmCommand lastMinute = (CommandParser.AlarmCommand) parser
                 .parse("!alarm 23:59").getCommand();
 
         assertEquals(0, midnight.getHour());
         assertEquals(0, midnight.getMinute());
+        assertEquals(7, singleDigitHour.getHour());
+        assertEquals(5, singleDigitHour.getMinute());
         assertEquals(23, lastMinute.getHour());
         assertEquals(59, lastMinute.getMinute());
         assertError(parser.parse("!alarm"), CommandParser.ErrorCode.MISSING_ARGUMENT);
-        assertError(parser.parse("!alarm 7:05"), CommandParser.ErrorCode.INVALID_TIME);
         assertError(parser.parse("!alarm 24:00"), CommandParser.ErrorCode.INVALID_TIME);
         assertError(parser.parse("!alarm 07:05 label"), CommandParser.ErrorCode.UNEXPECTED_ARGUMENT);
     }

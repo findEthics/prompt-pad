@@ -1,6 +1,7 @@
 <resources>
     <string name="title_activity_settings">Titan Settings</string>
     <string name="drawer_empty">Type to summon apps</string>
+    <string name="command_hint">! for commands</string>
     <string name="dark_mode_title">Dark Mode</string>
     <string name="dark_mode_summary">Enable or disable dark mode</string>
     <string name="has_keyboard_title">Physical keyboard</string>

@@ -14,6 +14,7 @@ public final class CommandParser {
             "(?:(\\d+)h)?(?:(\\d+)m)?(?:(\\d+)s)?", Pattern.CASE_INSENSITIVE);
     private static final Pattern ISO_DATE_PATTERN = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})");
     private static final Pattern TIME_PATTERN = Pattern.compile("(?:[01]\\d|2[0-3]):[0-5]\\d");
+    private static final Pattern ALARM_TIME_PATTERN = Pattern.compile("(?:[01]?\\d|2[0-3]):[0-5]\\d");
     private static final Pattern TELEGRAM_USERNAME_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9_]{4,31}");
 
     private final Clock clock;
@@ -41,21 +42,21 @@ public final class CommandParser {
 
     public ParseResult parse(String input) {
         if (input == null || input.length() == 0) {
-            return error(ErrorCode.EMPTY_INPUT, "Enter a command beginning with !.", "!help");
+            return error(ErrorCode.EMPTY_INPUT, "Enter a command beginning with !.", "!");
         }
         if (input.charAt(0) != '!') {
-            return error(ErrorCode.NOT_A_COMMAND, "Commands must begin with !.", "!help");
+            return error(ErrorCode.NOT_A_COMMAND, "Commands must begin with !.", "!");
         }
 
         String body = input.substring(1).trim();
         if (body.length() == 0) {
-            return error(ErrorCode.MISSING_ARGUMENT, "Specify a command after !.", "!help");
+            return error(ErrorCode.MISSING_ARGUMENT, "Specify a command after !.", "!");
         }
 
         Parts parts = splitFirstWord(body);
         Type type = Type.fromName(parts.first);
         if (type == null) {
-            return error(ErrorCode.UNKNOWN_COMMAND, "Unknown command: " + parts.first + ".", "!help");
+            return error(ErrorCode.UNKNOWN_COMMAND, "Unknown command: " + parts.first + ".", "!");
         }
         switch (type) {
             case CALL:
@@ -225,19 +226,20 @@ public final class CommandParser {
 
     private ParseResult parseAlarm(String arguments) {
         if (arguments.length() == 0) {
-            return missing("!alarm HH:MM");
+            return missing("!alarm H:MM");
         }
         Parts parts = splitFirstWord(arguments);
         if (parts.rest.length() != 0) {
             return error(ErrorCode.UNEXPECTED_ARGUMENT, "!alarm does not take arguments after the time.",
-                    "!alarm HH:MM");
+                    "!alarm H:MM");
         }
-        if (!TIME_PATTERN.matcher(parts.first).matches()) {
-            return error(ErrorCode.INVALID_TIME, "Use a 24-hour HH:mm time.", "!alarm HH:MM");
+        if (!ALARM_TIME_PATTERN.matcher(parts.first).matches()) {
+            return error(ErrorCode.INVALID_TIME, "Use a 24-hour H:mm or HH:mm time.", "!alarm H:MM");
         }
+        int separator = parts.first.indexOf(':');
         return ParseResult.command(new AlarmCommand(
-                Integer.parseInt(parts.first.substring(0, 2)),
-                Integer.parseInt(parts.first.substring(3, 5))));
+                Integer.parseInt(parts.first.substring(0, separator)),
+                Integer.parseInt(parts.first.substring(separator + 1))));
     }
 
     private ParseResult parseNote(String arguments) {
@@ -455,12 +457,11 @@ public final class CommandParser {
     }
 
     public enum Type {
-        HELP("help", "!help"),
         CALL("call", "!call <contact-or-number>"),
         TEXT("text", "!text <contact-or-number> <message>"),
         HERMES("hermes", "!hermes <message>"),
         TIMER("timer", "!timer <duration> [label]"),
-        ALARM("alarm", "!alarm HH:MM"),
+        ALARM("alarm", "!alarm H:MM"),
         TODO("todo", "!todo <text>"),
         TODOS("todos", "!todos"),
         NOTE("note", "!note <text>"),

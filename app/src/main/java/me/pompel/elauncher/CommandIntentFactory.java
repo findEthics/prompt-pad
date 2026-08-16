@@ -6,7 +6,7 @@ import android.provider.AlarmClock;
 import android.provider.CalendarContract;
 import android.provider.MediaStore;
 
-/** Creates only prefilled system intents; it never uses an intent that performs an action directly. */
+/** Creates intents for the supported command actions. */
 public final class CommandIntentFactory {
     private CommandIntentFactory() {
     }
@@ -40,7 +40,8 @@ public final class CommandIntentFactory {
     public static Intent setAlarm(int hour, int minute) {
         return new Intent(AlarmClock.ACTION_SET_ALARM)
                 .putExtra(AlarmClock.EXTRA_HOUR, hour)
-                .putExtra(AlarmClock.EXTRA_MINUTES, minute);
+                .putExtra(AlarmClock.EXTRA_MINUTES, minute)
+                .putExtra(AlarmClock.EXTRA_SKIP_UI, true);
     }
 
     public static Intent insertEvent(CommandParser.EventCommand event) {

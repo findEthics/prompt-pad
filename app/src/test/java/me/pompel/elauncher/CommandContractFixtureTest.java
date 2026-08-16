@@ -41,13 +41,13 @@ public class CommandContractFixtureTest {
             "CONFIRMATION", "SUCCESS"
     );
     private static final Set<String> COMMANDS = values(
-            "-", "HELP", "CALL", "TEXT", "HERMES", "TIMER", "ALARM", "TODO", "TODOS", "NOTE", "NOTES",
+            "-", "CALL", "TEXT", "HERMES", "TIMER", "ALARM", "TODO", "TODOS", "NOTE", "NOTES",
             "EVENT", "TORCH", "CAMERA", "UNKNOWN"
     );
     private static final Set<String> EFFECTS = values(
             "NONE", "FILTER_APPS", "SHOW_HELP", "SHOW_SYNTAX", "SHOW_CONTACT_CHOICES",
             "OFFER_SETTINGS", "SHOW_UNAVAILABLE", "OPEN_DIALER", "OPEN_SMS_COMPOSER",
-            "OPEN_TIMER", "OPEN_ALARM", "OPEN_TELEGRAM", "SAVE_TODO", "OPEN_TODOS", "SAVE_NOTE", "OPEN_NOTES",
+            "OPEN_TIMER", "SAVE_ALARM", "OPEN_TELEGRAM", "SAVE_TODO", "OPEN_TODOS", "SAVE_NOTE", "OPEN_NOTES",
             "OPEN_CALENDAR", "TOGGLE_TORCH", "OPEN_CAMERA", "COMPLETE_TODO", "DELETE_TODO",
             "DELETE_NOTE", "RETURN_TO_LAUNCHER"
     );

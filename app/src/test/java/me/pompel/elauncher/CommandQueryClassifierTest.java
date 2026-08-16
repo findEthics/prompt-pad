@@ -39,7 +39,7 @@ public class CommandQueryClassifierTest {
     }
 
     @Test
-    public void completeCommandsAreRecognizedIncludingHelp() {
+    public void completeCommandsAreRecognized() {
         assertSuggestion("!call", CommandParser.Type.CALL);
         assertSuggestion("!text", CommandParser.Type.TEXT);
         assertSuggestion("!hermes", CommandParser.Type.HERMES);
@@ -52,7 +52,8 @@ public class CommandQueryClassifierTest {
         assertSuggestion("!event", CommandParser.Type.EVENT);
         assertPreview("!t", CommandParser.Type.TORCH);
         assertPreview("!camera", CommandParser.Type.CAMERA);
-        assertPreview("!HeLp", CommandParser.Type.HELP);
+        assertEquals(CommandQueryClassifier.DisplayState.UNKNOWN_COMMAND,
+                CommandQueryClassifier.classify("!HeLp").getDisplayState());
     }
 
     @Test
@@ -72,8 +73,7 @@ public class CommandQueryClassifierTest {
         assertEquals(CommandQueryClassifier.DisplayState.UNKNOWN_COMMAND, result.getDisplayState());
         assertNull(result.getCommand());
         assertTrue(result.getMessage().startsWith("Unknown command: zoom"));
-        assertEquals(13, result.getCommands().size());
-        assertTrue(result.getCommands().contains(CommandParser.Type.HELP));
+        assertEquals(12, result.getCommands().size());
 
         assertEquals(CommandQueryClassifier.DisplayState.UNKNOWN_COMMAND,
                 CommandQueryClassifier.classify("!torch").getDisplayState());
@@ -96,9 +96,7 @@ public class CommandQueryClassifierTest {
         assertEquals("!timer <duration> [label]", result.getSyntaxHint());
 
         result = CommandQueryClassifier.classify("!alarm 7:05");
-        assertEquals(CommandQueryClassifier.DisplayState.VALIDATION_ERROR, result.getDisplayState());
-        assertEquals(CommandParser.Type.ALARM, result.getCommand());
-        assertEquals("!alarm HH:MM", result.getSyntaxHint());
+        assertPreview("!alarm 7:05", CommandParser.Type.ALARM);
 
         assertPreview("!hermes hello there", CommandParser.Type.HERMES);
     }
@@ -119,7 +117,7 @@ public class CommandQueryClassifierTest {
     private static void assertHelp(String input) {
         CommandQueryClassifier.Result result = CommandQueryClassifier.classify(input);
         assertEquals(CommandQueryClassifier.DisplayState.COMMAND_HELP, result.getDisplayState());
-        assertEquals(13, result.getCommands().size());
+        assertEquals(12, result.getCommands().size());
     }
 
     private static void assertPreview(String input, CommandParser.Type command) {

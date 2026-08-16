@@ -4,8 +4,6 @@ route-app-query	gmail	INPUT_CHANGED	DEFAULT	APP_SEARCH	APP_RESULTS	-	-	FILTER_AP
 route-leading-space	 !timer 10m	INPUT_CHANGED	DEFAULT	APP_SEARCH	APP_RESULTS	-	-	FILTER_APPS	Whitespace prevents command mode
 route-bare-prefix	!	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	COMMAND_HELP	-	-	SHOW_HELP	Show command help and suggestions
 route-prefix-removed	mail	INPUT_CHANGED	DEFAULT	APP_SEARCH	APP_RESULTS	-	-	FILTER_APPS	Restore app rows after removing the prefix
-help-case-insensitive	!HeLp	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	HELP	-	NONE	Help command is ready to submit
-help-submit	!HeLp	SUBMIT	DEFAULT	COMMAND_SEARCH	SUCCESS	HELP	-	SHOW_HELP	Show command help
 unknown-command	!unknown	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	UNKNOWN_COMMAND	UNKNOWN	-	SHOW_HELP	Unknown command; show help
 call-raw-preview	!call +1 (555) 123-4567	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	CALL	recipient=+15551234567	NONE	Dialer preview is ready
 call-raw-submit	!call +1 (555) 123-4567	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	CALL	recipient=+15551234567	OPEN_DIALER	Open prefilled dialer without calling
@@ -44,11 +42,11 @@ timer-zero-duration	!timer 0m	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ER
 timer-invalid-duration	!timer 10x	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ERROR	TIMER	duration=10x	SHOW_SYNTAX	Use durations such as 30s, 10m, 1h, or 1m15s
 timer-submit	!timer 10m	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	TIMER	duration=600s	OPEN_TIMER	Open the system timer form
 timer-handler-unavailable	!timer 10m	SUBMIT	CLOCK_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	TIMER	duration=600s	SHOW_UNAVAILABLE	No Clock app is available
-alarm-missing-time	!alarm	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	ALARM	-	SHOW_SYNTAX	Use !alarm HH:MM
-alarm-preview	!alarm 07:05	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	ALARM	time=07:05	NONE	Alarm preview is ready
-alarm-invalid-time	!alarm 7:05	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ERROR	ALARM	time=7:05	SHOW_SYNTAX	Use a 24-hour HH:mm time
-alarm-submit	!alarm 07:05	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	ALARM	time=07:05	OPEN_ALARM	Open the system alarm form
-alarm-handler-unavailable	!alarm 07:05	SUBMIT	CLOCK_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	ALARM	time=07:05	SHOW_UNAVAILABLE	No Clock app is available
+alarm-missing-time	!alarm	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	ALARM	-	SHOW_SYNTAX	Use !alarm H:MM
+alarm-preview	!alarm 7:05	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	ALARM	time=07:05	NONE	Alarm preview is ready
+alarm-invalid-time	!alarm 24:00	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	VALIDATION_ERROR	ALARM	time=24:00	SHOW_SYNTAX	Use a 24-hour H:mm or HH:mm time
+alarm-submit	!alarm 07:05	SUBMIT	DEFAULT	COMMAND_SEARCH	SUCCESS	ALARM	time=07:05	SAVE_ALARM	Set the alarm silently
+alarm-handler-unavailable	!alarm 07:05	SUBMIT	CLOCK_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	ALARM	time=07:05	SHOW_UNAVAILABLE	try again
 todo-missing-text	!todo	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	TODO	-	SHOW_SYNTAX	Use !todo <text>
 todo-preview	!todo Buy batteries	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TODO	text=Buy batteries	NONE	To-do preview is ready
 todo-submit	!todo Buy batteries	SUBMIT	DEFAULT	COMMAND_SEARCH	SUCCESS	TODO	text=Buy batteries	SAVE_TODO	Save a local incomplete to-do

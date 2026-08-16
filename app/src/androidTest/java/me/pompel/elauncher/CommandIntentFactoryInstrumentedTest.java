@@ -48,6 +48,7 @@ public class CommandIntentFactoryInstrumentedTest {
         assertEquals(AlarmClock.ACTION_SET_ALARM, alarm.getAction());
         assertEquals(7, alarm.getIntExtra(AlarmClock.EXTRA_HOUR, -1));
         assertEquals(5, alarm.getIntExtra(AlarmClock.EXTRA_MINUTES, -1));
+        assertTrue(alarm.getBooleanExtra(AlarmClock.EXTRA_SKIP_UI, false));
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         assertTrue(alarm.resolveActivity(context.getPackageManager()) != null);
         assertEquals(Intent.ACTION_INSERT, calendar.getAction());

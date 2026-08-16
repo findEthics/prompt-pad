@@ -33,12 +33,11 @@ Titan reserves an explicit command mode in the app-drawer search field. This sec
 
 | Command | Syntax | Safe outcome after explicit submission |
 | --- | --- | --- |
-| Help | `!help` | Show commands, examples, and syntax |
 | Call | `!call <contact-or-number>` | Open a prefilled dialer; never place a call |
 | Text | `!text <contact-or-number> <message>` | Open a prefilled SMS composer; never send a message |
 | Telegram | `!hermes <message>` | Open the Telegram chat for the saved bot username with the message prefilled; never send a message |
 | Timer | `!timer <duration> [label]` | Open the system timer form |
-| Alarm | `!alarm HH:MM` | Open the system alarm form with a 24-hour time |
+| Alarm | `!alarm H:MM` | Set a system alarm silently and show confirmation |
 | To-do | `!todo <text>` | Save a local incomplete to-do |
 | To-dos | `!todos` | Open the local to-do Activity |
 | Note | `!note <text>` | Save a timestamped local note |
@@ -51,7 +50,7 @@ Titan reserves an explicit command mode in the app-drawer search field. This sec
 
 - Command names are case-insensitive. The leading `!` selects command mode and is not passed to handlers.
 - Timer durations are non-zero contiguous combinations of hours, minutes, and seconds in that order, such as `30s`, `1m15s`, `3m20s`, `10m`, `1h`, and `1h30m`.
-- Alarm times use strict 24-hour `HH:mm` format and open a prefilled system form.
+- Alarm times use 24-hour `H:mm` or `HH:mm` format and set the alarm silently.
 - Event dates are `today`, `tomorrow`, or `YYYY-MM-DD`; times use 24-hour `HH:mm`. Events use local time, a 30-minute default duration, and reject past start times.
 - Direct phone numbers contain 7 to 15 digits with an optional leading `+`; spaces, hyphens, and parentheses are ignored for recognition. Contact matching is case-insensitive and uses the longest contact-name prefix.
 - Save a concise Telegram bot username in Settings. `!hermes <message>` opens that bot in Telegram with the draft text prefilled and does not send it.
