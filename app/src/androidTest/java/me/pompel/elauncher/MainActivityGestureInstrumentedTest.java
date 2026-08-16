@@ -1,13 +1,17 @@
 package me.pompel.elauncher;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.view.KeyEvent;
 import android.view.View;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.preference.PreferenceManager;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,6 +37,37 @@ public class MainActivityGestureInstrumentedTest {
             assertEquals(View.GONE, activity.findViewById(R.id.AppDrawer).getVisibility());
         } finally {
             activity.finish();
+        }
+    }
+
+    @Test
+    public void typingOnHomeOpensDrawerWithText() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean hadPreference = preferences.contains(MainActivity.HAS_KEYBOARD_PREFERENCE);
+        boolean previousValue = preferences.getBoolean(MainActivity.HAS_KEYBOARD_PREFERENCE, false);
+        try {
+            preferences.edit().putBoolean(MainActivity.HAS_KEYBOARD_PREFERENCE, true).commit();
+            MainActivity activity = (MainActivity) InstrumentationRegistry.getInstrumentation()
+                    .startActivitySync(new Intent(context, MainActivity.class)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            try {
+                InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+                    assertTrue(activity.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN,
+                            KeyEvent.KEYCODE_A)));
+                    assertEquals(View.GONE, activity.findViewById(R.id.HomeScreen).getVisibility());
+                    assertEquals(View.VISIBLE, activity.findViewById(R.id.AppDrawer).getVisibility());
+                    assertEquals("a", ((android.widget.EditText) activity.findViewById(R.id.search))
+                            .getText().toString());
+                });
+            } finally {
+                activity.finish();
+            }
+        } finally {
+            SharedPreferences.Editor editor = preferences.edit();
+            if (hadPreference) editor.putBoolean(MainActivity.HAS_KEYBOARD_PREFERENCE, previousValue);
+            else editor.remove(MainActivity.HAS_KEYBOARD_PREFERENCE);
+            editor.commit();
         }
     }
 }

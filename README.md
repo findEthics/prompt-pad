@@ -9,7 +9,7 @@ The launcher is based on NoLauncher and inspired by [OLauncher Light](https://gi
 - Sparse homescreen and app drawer
 - Fuzzy app search
 - Bottom search bar in app drawer
-- Swipe up from the homescreen to open the app drawer
+- Swipe up or type on the physical keyboard from the homescreen to open the app drawer
 - Long press a homescreen app field to assign or rename an app
 - Automatically launch the single matching app result
 - Swipe down for notifications

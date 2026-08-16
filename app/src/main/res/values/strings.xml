@@ -3,6 +3,8 @@
     <string name="drawer_empty">Type to summon apps</string>
     <string name="dark_mode_title">Dark Mode</string>
     <string name="dark_mode_summary">Enable or disable dark mode</string>
+    <string name="has_keyboard_title">Physical keyboard</string>
+    <string name="has_keyboard_summary">Open search when typing from the home screen</string>
     <string name="hermes_username_title">Hermes Telegram Bot</string>
     <string name="hermes_username_summary">Username used by !hermes</string>
 </resources>

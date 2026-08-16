@@ -105,6 +105,17 @@ public class SettingsActivity extends AppCompatActivity {
                 }
             }
 
+            androidx.preference.SwitchPreferenceCompat keyboardPreference =
+                    findPreference(MainActivity.HAS_KEYBOARD_PREFERENCE);
+            if (keyboardPreference != null) {
+                android.content.SharedPreferences prefs =
+                        androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext());
+                if (!prefs.contains(MainActivity.HAS_KEYBOARD_PREFERENCE)) {
+                    keyboardPreference.setChecked(MainActivity.hasHardwareKeyboard(requireContext()));
+                    prefs.edit().remove(MainActivity.HAS_KEYBOARD_PREFERENCE).apply();
+                }
+            }
+
             EditTextPreference hermesUsername = findPreference("hermes_username_preference");
             if (hermesUsername != null) {
                 hermesUsername.setOnPreferenceChangeListener((preference, newValue) -> {

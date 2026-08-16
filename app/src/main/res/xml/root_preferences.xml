@@ -4,6 +4,10 @@
         app:key="dark_mode_preference"
         app:title="@string/dark_mode_title"
         app:summary="@string/dark_mode_summary" />
+    <SwitchPreferenceCompat
+        app:key="has_keyboard_preference"
+        app:title="@string/has_keyboard_title"
+        app:summary="@string/has_keyboard_summary" />
     <EditTextPreference
         app:key="hermes_username_preference"
         app:title="@string/hermes_username_title"

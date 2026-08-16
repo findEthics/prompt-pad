@@ -48,6 +48,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private static final String HERMES_USERNAME_PREFERENCE = "hermes_username_preference";
+    static final String HAS_KEYBOARD_PREFERENCE = "has_keyboard_preference";
     private static final String HERMES_SETTINGS_MESSAGE = "Set the Hermes Telegram bot in Settings.";
     private ArrayList<App> appList;
     private EditText search;
@@ -93,14 +94,20 @@ public class MainActivity extends AppCompatActivity {
             inputManager.hideSoftInputFromWindow(search.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         } else {
             search.requestFocus();
-            if (!hasHardwareKeyboard()) {
+            if (!hasKeyboard()) {
                 inputManager.showSoftInput(search, InputMethodManager.SHOW_IMPLICIT);
             }
         }
     }
 
-    private boolean hasHardwareKeyboard() {
-        Configuration configuration = getResources().getConfiguration();
+    private boolean hasKeyboard() {
+        return prefs.contains(HAS_KEYBOARD_PREFERENCE)
+                ? prefs.getBoolean(HAS_KEYBOARD_PREFERENCE, false)
+                : hasHardwareKeyboard(this);
+    }
+
+    static boolean hasHardwareKeyboard(Context context) {
+        Configuration configuration = context.getResources().getConfiguration();
         return configuration.keyboard != Configuration.KEYBOARD_NOKEYS
                 && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
     }
@@ -290,6 +297,20 @@ public class MainActivity extends AppCompatActivity {
 
         new SwipeListener(findViewById(R.id.HomeScreen));
 
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (findViewById(R.id.HomeScreen).getVisibility() == View.VISIBLE && hasKeyboard()) {
+            int unicode = event.getUnicodeChar(event.getMetaState());
+            if (Character.isValidCodePoint(unicode) && !Character.isISOControl(unicode)) {
+                changeLayout(false, false);
+                search.setText(new String(Character.toChars(unicode)));
+                search.setSelection(search.length());
+                return true;
+            }
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     private void submitCommand() {
