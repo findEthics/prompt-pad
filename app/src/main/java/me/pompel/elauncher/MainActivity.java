@@ -4,7 +4,6 @@ import androidx.annotation.NonNull;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
-import androidx.core.content.res.ResourcesCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -27,7 +26,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.Editable;
-import android.text.SpannableString;
 import android.text.TextWatcher;
 import android.transition.Fade;
 import android.transition.Transition;
@@ -41,7 +39,6 @@ import android.view.View;
 import android.view.KeyEvent;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,12 +47,11 @@ import java.util.Collections;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String NUMBER_OF_APPS = "number_of_apps_preference";
     private static final String HERMES_USERNAME_PREFERENCE = "hermes_username_preference";
     private static final String HERMES_SETTINGS_MESSAGE = "Set the Hermes Telegram bot in Settings.";
     private ArrayList<App> appList;
-    private ArrayList<SpannableString> appNames;
     private EditText search;
+    private TextView drawerEmpty;
     private SharedPreferences prefs;
 
     private recyclerAdapter adapter;
@@ -81,9 +77,6 @@ public class MainActivity extends AppCompatActivity {
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         for (ResolveInfo info : packageManager.queryIntentActivities(intent, 0)) appList.add(new App(info.loadLabel(packageManager).toString(), info.activityInfo.packageName));
         Collections.sort(appList, (app1, app2) -> app1.appName.toString().compareToIgnoreCase(app2.appName.toString()));
-        for (App app : appList) {
-            appNames.add(app.appName);
-        }
     }
 
     long keyboardActionTime = 0;
@@ -113,7 +106,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void changeLayout(boolean home, boolean animated) {
-        if (!home) loadApps();
+        if (!home) {
+            loadApps();
+            resetDrawerToIdle();
+        }
         if (animated) {
             Transition transition = new Fade();
             transition.setDuration(300);
@@ -164,9 +160,9 @@ public class MainActivity extends AppCompatActivity {
         });
 
         appList = new ArrayList<>();
-        appNames = new ArrayList<>();
         loadApps();
         search = findViewById(R.id.search);
+        drawerEmpty = findViewById(R.id.drawer_empty);
         contactsResolver = new ContactsResolver(this);
         torchController = new TorchController(this);
         SharedPreferences commandPreferences = getSharedPreferences("command_data", MODE_PRIVATE);
@@ -270,6 +266,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 searchRevision++;
+                drawerEmpty.setVisibility(charSequence.length() == 0 ? View.VISIBLE : View.GONE);
                 CommandAdapter.styleCommandToken(MainActivity.this, search.getText());
                 CommandQueryClassifier.Result result = CommandQueryClassifier.classify(charSequence.toString());
                 if (result.getMode() == CommandQueryClassifier.Mode.COMMAND_SEARCH) {
@@ -291,51 +288,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        LinearLayout homescreen = findViewById(R.id.HomeScreen);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-
-        CharSequence[] alertApps = appNames.toArray(new CharSequence[0]);
-        int i = 0;
-        for (i = 0; i < prefs.getInt(NUMBER_OF_APPS, 4); i++) {
-            TextView textView = new TextView(this);
-            textView.setTextColor(getColorFromAttr(androidx.appcompat.R.attr.colorPrimary));
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 32);
-            textView.setTypeface(ResourcesCompat.getFont(this, R.font.poppins));
-            textView.setPadding(0, 0, 0, 50);
-            textView.setText(prefs.getString(Integer.toString(i), "App"));
-            textView.setTag(i);
-            textView.setLayoutParams(params);
-            textView.setOnLongClickListener(v -> {
-                loadApps();
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setTitle("Select app");
-                builder.setItems(alertApps, (dialog, which) -> {
-                    AlertDialog.Builder builder1 = new AlertDialog.Builder(MainActivity.this);
-                    builder1.setTitle("Set app name");
-                    final EditText input = new EditText(MainActivity.this);
-                    input.setText(appNames.get(which));
-                    builder1.setView(input);
-                    input.setTag(appList.get(which).packageId);
-                    builder1.setPositiveButton("Add", (dialog1, which1) -> {
-                        String name = input.getText().toString();
-                        textView.setText(name);
-                        SharedPreferences.Editor editor = prefs.edit();
-                        editor.putString(String.valueOf(textView.getTag()), name);
-                        editor.putString("p" + textView.getTag(), String.valueOf(input.getTag()));
-                        editor.apply();
-                    });
-                    builder1.create();
-                    builder1.show();
-                });
-                builder.create();
-                builder.show();
-                return true;
-            });
-            textView.setOnClickListener(v -> openAppWithIntent(getPackageManager().getLaunchIntentForPackage(prefs.getString("p" + textView.getTag(), "")), true));
-            homescreen.addView(textView);
-        }
-
-        new SwipeListener(homescreen);
+        new SwipeListener(findViewById(R.id.HomeScreen));
 
     }
 
@@ -473,17 +426,17 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 launchCommandIntent(CommandIntentFactory.openTelegram(username, hermes.getMessage()),
-                        "Telegram is not available.", "Hermes draft opened.");
+                        "Telegram is not available.");
                 return;
             case TIMER:
                 CommandParser.TimerCommand timer = (CommandParser.TimerCommand) command;
                 launchCommandIntent(CommandIntentFactory.setTimer(timer.getDurationSeconds(), timer.getLabel()),
-                        "No Clock app is available.", "Timer form opened.");
+                        "No Clock app is available.");
                 return;
             case ALARM:
                 CommandParser.AlarmCommand alarm = (CommandParser.AlarmCommand) command;
                 launchCommandIntent(CommandIntentFactory.setAlarm(alarm.getHour(), alarm.getMinute()),
-                        "No Clock app is available.", "Alarm form opened.");
+                        "No Clock app is available.");
                 return;
             case TODO:
                 Todo todo = todosRepository.add(((CommandParser.TodoCommand) command).getText());
@@ -491,7 +444,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             case TODOS:
                 launchCommandIntent(new Intent(this, TodosActivity.class),
-                        "The to-do list is unavailable.", "Opening to-dos.");
+                        "The to-do list is unavailable.");
                 return;
             case NOTE:
                 Note note = notesRepository.add(((CommandParser.NoteCommand) command).getText());
@@ -499,19 +452,18 @@ public class MainActivity extends AppCompatActivity {
                 return;
             case NOTES:
                 launchCommandIntent(new Intent(this, NotesActivity.class),
-                        "The notes list is unavailable.", "Opening notes.");
+                        "The notes list is unavailable.");
                 return;
             case EVENT:
                 CommandParser.EventCommand event = (CommandParser.EventCommand) command;
-                launchCommandIntent(CommandIntentFactory.insertEvent(event), "No Calendar app is available.",
-                        "Calendar event form opened.");
+                launchCommandIntent(CommandIntentFactory.insertEvent(event), "No Calendar app is available.");
                 return;
             case TORCH:
                 toggleTorch(query, searchRevision);
                 return;
             case CAMERA:
                 launchCommandIntent(CommandIntentFactory.camera(),
-                        "No camera app is available.", "Camera opened.");
+                        "No camera app is available.");
                 return;
         }
     }
@@ -521,7 +473,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void open(String number) {
                 launchCommandIntent(CommandIntentFactory.dial(number),
-                        "No dialer is available.", "Dialer opened with " + number + ".");
+                        "No dialer is available.");
             }
         });
     }
@@ -531,8 +483,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void open(String number) {
                 launchCommandIntent(CommandIntentFactory.composeText(number, command.getMessage()),
-                        "No SMS app is available.",
-                        "SMS composer opened for " + number + ".");
+                        "No SMS app is available.");
             }
         });
     }
@@ -598,10 +549,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void launchCommandIntent(Intent intent, String unavailableMessage, String confirmationMessage) {
+    private void launchCommandIntent(Intent intent, String unavailableMessage) {
         try {
             startActivity(intent);
-            showCommandStatus("Ready", confirmationMessage);
+            resetDrawerToIdle();
         } catch (ActivityNotFoundException | SecurityException exception) {
             Log.w(MainActivity.class.getSimpleName(), "Unable to launch command intent", exception);
             showCommandStatus("Unavailable", unavailableMessage);
@@ -670,6 +621,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showCommandStatus(String title, String detail) {
+        drawerEmpty.setVisibility(View.GONE);
         adapter.pauseFiltering();
         if (recyclerView.getAdapter() != commandAdapter) {
             recyclerView.setAdapter(commandAdapter);
@@ -678,11 +630,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showCommandPermissionStatus(String title, String detail) {
+        drawerEmpty.setVisibility(View.GONE);
         adapter.pauseFiltering();
         if (recyclerView.getAdapter() != commandAdapter) {
             recyclerView.setAdapter(commandAdapter);
         }
         commandAdapter.showPermissionStatus(title, detail);
+    }
+
+    private void resetDrawerToIdle() {
+        if (search.length() != 0) {
+            search.setText("");
+        }
+        drawerEmpty.setVisibility(View.VISIBLE);
+        if (recyclerView.getAdapter() != adapter) {
+            recyclerView.setAdapter(adapter);
+        }
+        adapter.filter("");
     }
 
     private void openAppSettings(String fallbackMessage) {

@@ -112,7 +112,7 @@ public final class CommandQueryClassifier {
         NOTE("note", "!note <text>"),
         NOTES("notes", "!notes"),
         EVENT("event", "!event <date> <time> <title>"),
-        TORCH("t", "!t"),
+        TORCH("t", "!torch"),
         CAMERA("camera", "!camera");
 
         private final String name;

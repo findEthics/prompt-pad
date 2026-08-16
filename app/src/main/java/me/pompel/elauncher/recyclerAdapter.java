@@ -25,7 +25,7 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
 
     public recyclerAdapter(ArrayList<App> appList, RecyclerViewClickListener listener) {
         this.appList = appList;
-        this.appListFiltered = appList;
+        this.appListFiltered = new ArrayList<>();
         this.listener = listener;
     }
 
@@ -57,8 +57,11 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
                 FilterResults results = new FilterResults();
                 List<App> filteredApps = new ArrayList<>();
 
-                if (str.isEmpty()) filteredApps = appList;
-                else for (App app : appList) if (fuzzyContains(app.appName.toString().toLowerCase(), str)) filteredApps.add(app);
+                if (!str.isEmpty()) {
+                    for (App app : appList) {
+                        if (fuzzyContains(app.appName.toString().toLowerCase(), str)) filteredApps.add(app);
+                    }
+                }
 
                 results.count = filteredApps.size();
                 results.values = filteredApps;
