@@ -14,6 +14,7 @@ public final class CommandParser {
             "(?:(\\d+)h)?(?:(\\d+)m)?(?:(\\d+)s)?", Pattern.CASE_INSENSITIVE);
     private static final Pattern ISO_DATE_PATTERN = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})");
     private static final Pattern TIME_PATTERN = Pattern.compile("(?:[01]\\d|2[0-3]):[0-5]\\d");
+    private static final Pattern TELEGRAM_USERNAME_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9_]{4,31}");
 
     private final Clock clock;
     private final ContactResolver contactResolver;
@@ -59,6 +60,9 @@ public final class CommandParser {
         if ("text".equals(name)) {
             return parseText(parts.rest);
         }
+        if ("hermes".equals(name)) {
+            return parseHermes(parts.rest);
+        }
         if ("timer".equals(name)) {
             return parseTimer(parts.rest);
         }
@@ -99,6 +103,22 @@ public final class CommandParser {
     public static String normalizePhoneNumber(String value) {
         PhoneNumberParse parse = parsePhoneNumber(value);
         return parse.state == PhoneNumberState.VALID ? parse.number : null;
+    }
+
+    /** Returns a normalized Telegram username, or {@code null} when invalid. */
+    public static String normalizeTelegramUsername(String value) {
+        if (value == null) {
+            return null;
+        }
+        String username = value.trim();
+        if (username.startsWith("@")) {
+            username = username.substring(1);
+        }
+        return TELEGRAM_USERNAME_PATTERN.matcher(username).matches() ? username : null;
+    }
+
+    public static boolean isValidTelegramUsername(String value) {
+        return normalizeTelegramUsername(value) != null;
     }
 
     private ParseResult parseCall(String arguments) {
@@ -173,6 +193,13 @@ public final class CommandParser {
         }
         return ParseResult.command(new TextCommand(
                 Recipient.contactPrefix(arguments.substring(0, match.getPrefixLength()).trim()), message));
+    }
+
+    private ParseResult parseHermes(String arguments) {
+        if (arguments.length() == 0) {
+            return missing("!hermes <message>");
+        }
+        return ParseResult.command(new HermesCommand(arguments));
     }
 
     private ParseResult parseTimer(String arguments) {
@@ -432,6 +459,7 @@ public final class CommandParser {
     public enum Type {
         CALL,
         TEXT,
+        HERMES,
         TIMER,
         ALARM,
         NOTE,
@@ -601,6 +629,23 @@ public final class CommandParser {
 
         public Recipient getRecipient() {
             return recipient;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+    }
+
+    public static final class HermesCommand implements Command {
+        private final String message;
+
+        private HermesCommand(String message) {
+            this.message = message;
+        }
+
+        @Override
+        public Type getType() {
+            return Type.HERMES;
         }
 
         public String getMessage() {

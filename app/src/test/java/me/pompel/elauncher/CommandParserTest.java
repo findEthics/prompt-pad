@@ -68,6 +68,25 @@ public class CommandParserTest {
     }
 
     @Test
+    public void parsesHermesMessageOnlyForTheSavedTelegramBot() {
+        CommandParser parser = parserAt("2026-08-15 10:00");
+
+        CommandParser.HermesCommand hermes = (CommandParser.HermesCommand) parser
+                .parse("!hermes hello there").getCommand();
+
+        assertEquals("hello there", hermes.getMessage());
+        assertError(parser.parse("!hermes"), CommandParser.ErrorCode.MISSING_ARGUMENT);
+    }
+
+    @Test
+    public void normalizesTelegramBotUsernameForSettings() {
+        assertEquals("hermes_bot", CommandParser.normalizeTelegramUsername(" @hermes_bot "));
+        assertTrue(CommandParser.isValidTelegramUsername("hermes_bot"));
+        assertFalse(CommandParser.isValidTelegramUsername("bad-name"));
+        assertFalse(CommandParser.isValidTelegramUsername("abcd"));
+    }
+
+    @Test
     public void acceptsAnUnresolvedCallPrefixAndUsesAResolverForNamedText() {
         CommandParser withoutResolver = parserAt("2026-08-15 10:00");
         CommandParser.CallCommand unresolved = (CommandParser.CallCommand) withoutResolver

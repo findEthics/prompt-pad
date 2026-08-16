@@ -10,18 +10,12 @@ import java.util.UUID;
 /** Local persistent to-do store. */
 public final class TodosRepository {
     private static final String TODOS_KEY = "me.pompel.elauncher.todos.v1";
-    private static final TimeSource SYSTEM_TIME = new TimeSource() {
-        @Override
-        public long currentTimeMillis() {
-            return System.currentTimeMillis();
-        }
-    };
 
     private final KeyValueStore keyValueStore;
     private final TimeSource timeSource;
 
     public TodosRepository(KeyValueStore keyValueStore) {
-        this(keyValueStore, SYSTEM_TIME);
+        this(keyValueStore, RepositorySupport.SYSTEM_TIME);
     }
 
     public TodosRepository(KeyValueStore keyValueStore, TimeSource timeSource) {
@@ -34,7 +28,8 @@ public final class TodosRepository {
 
     public Todo add(String text) {
         List<Todo> todos = load();
-        Todo todo = new Todo(UUID.randomUUID().toString(), normalizeText(text), nextCreatedAt(todos), false);
+        Todo todo = new Todo(UUID.randomUUID().toString(), RepositorySupport.normalizeText(text),
+                nextCreatedAt(todos), false);
         todos.add(todo);
         save(todos);
         return todo;
@@ -123,10 +118,4 @@ public final class TodosRepository {
         return now <= latest && latest < Long.MAX_VALUE ? latest + 1 : now;
     }
 
-    private static String normalizeText(String text) {
-        if (text == null || text.trim().isEmpty()) {
-            throw new IllegalArgumentException("text must not be blank");
-        }
-        return text.trim();
-    }
 }

@@ -64,7 +64,7 @@ public final class TodosActivity extends AppCompatActivity {
         empty.setText("No to-dos yet");
         empty.setTextSize(20);
         empty.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        empty.setTypeface(ResourcesCompat.getFont(this, R.font.jetbrains_mono));
+        empty.setTypeface(ResourcesCompat.getFont(this, R.font.poppins));
         return empty;
     }
 
@@ -77,7 +77,7 @@ public final class TodosActivity extends AppCompatActivity {
                 Todo todo = getItem(position);
                 row.setText((todo.isCompleted() ? "[x] " : "[ ] ") + todo.getText());
                 row.setPadding(32, 24, 32, 24);
-                row.setTypeface(ResourcesCompat.getFont(TodosActivity.this, R.font.jetbrains_mono));
+                row.setTypeface(ResourcesCompat.getFont(TodosActivity.this, R.font.poppins));
                 return row;
             }
         });

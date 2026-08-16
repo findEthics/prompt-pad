@@ -13,6 +13,8 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.EditTextPreference;
+import android.widget.Toast;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -101,6 +103,32 @@ public class SettingsActivity extends AppCompatActivity {
                 if (!prefs.contains("dark_mode_preference")) {
                     darkModePreference.setChecked(ThemePreference.isDarkMode(requireContext()));
                 }
+            }
+
+            EditTextPreference hermesUsername = findPreference("hermes_username_preference");
+            if (hermesUsername != null) {
+                hermesUsername.setOnPreferenceChangeListener((preference, newValue) -> {
+                    String raw = newValue == null ? "" : newValue.toString();
+                    String input = raw.trim();
+                    if (input.isEmpty()) {
+                        if (!raw.isEmpty()) {
+                            hermesUsername.setText("");
+                            return false;
+                        }
+                        return true;
+                    }
+                    String normalized = CommandParser.normalizeTelegramUsername(input);
+                    if (normalized == null) {
+                        Toast.makeText(requireContext(), "Use a valid Telegram username.",
+                                Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
+                    if (!normalized.equals(raw)) {
+                        hermesUsername.setText(normalized);
+                        return false;
+                    }
+                    return true;
+                });
             }
         }
     }

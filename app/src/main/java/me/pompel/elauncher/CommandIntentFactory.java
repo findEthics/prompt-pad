@@ -20,6 +20,14 @@ public final class CommandIntentFactory {
                 .putExtra("sms_body", message);
     }
 
+    public static Intent openTelegram(String username, String message) {
+        Uri uri = new Uri.Builder().scheme("tg").authority("resolve")
+                .appendQueryParameter("domain", username)
+                .appendQueryParameter("text", message)
+                .build();
+        return new Intent(Intent.ACTION_VIEW, uri);
+    }
+
     public static Intent setTimer(int durationSeconds, String label) {
         Intent intent = new Intent(AlarmClock.ACTION_SET_TIMER)
                 .putExtra(AlarmClock.EXTRA_LENGTH, durationSeconds);

@@ -10,18 +10,12 @@ import java.util.UUID;
 /** Local persistent note store. */
 public final class NotesRepository {
     private static final String NOTES_KEY = "me.pompel.elauncher.notes.v1";
-    private static final TimeSource SYSTEM_TIME = new TimeSource() {
-        @Override
-        public long currentTimeMillis() {
-            return System.currentTimeMillis();
-        }
-    };
 
     private final KeyValueStore keyValueStore;
     private final TimeSource timeSource;
 
     public NotesRepository(KeyValueStore keyValueStore) {
-        this(keyValueStore, SYSTEM_TIME);
+        this(keyValueStore, RepositorySupport.SYSTEM_TIME);
     }
 
     public NotesRepository(KeyValueStore keyValueStore, TimeSource timeSource) {
@@ -34,7 +28,8 @@ public final class NotesRepository {
 
     public Note add(String text) {
         List<Note> notes = load();
-        Note note = new Note(UUID.randomUUID().toString(), normalizeText(text), nextCreatedAt(notes));
+        Note note = new Note(UUID.randomUUID().toString(), RepositorySupport.normalizeText(text),
+                nextCreatedAt(notes));
         notes.add(note);
         save(notes);
         return note;
@@ -100,10 +95,4 @@ public final class NotesRepository {
         return now <= latest && latest < Long.MAX_VALUE ? latest + 1 : now;
     }
 
-    private static String normalizeText(String text) {
-        if (text == null || text.trim().isEmpty()) {
-            throw new IllegalArgumentException("text must not be blank");
-        }
-        return text.trim();
-    }
 }

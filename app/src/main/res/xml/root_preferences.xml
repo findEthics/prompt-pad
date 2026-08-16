@@ -12,4 +12,10 @@
         app:key="dark_mode_preference"
         app:title="@string/dark_mode_title"
         app:summary="@string/dark_mode_summary" />
+    <EditTextPreference
+        app:key="hermes_username_preference"
+        app:title="@string/hermes_username_title"
+        app:summary="@string/hermes_username_summary"
+        app:useSimpleSummaryProvider="true"
+        android:inputType="text" />
 </PreferenceScreen>

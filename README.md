@@ -36,6 +36,7 @@ Titan reserves an explicit command mode in the app-drawer search field. This sec
 | Help | `!help` | Show commands, examples, and syntax |
 | Call | `!call <contact-or-number>` | Open a prefilled dialer; never place a call |
 | Text | `!text <contact-or-number> <message>` | Open a prefilled SMS composer; never send a message |
+| Telegram | `!hermes <message>` | Open the Telegram chat for the saved bot username with the message prefilled; never send a message |
 | Timer | `!timer <duration> [label]` | Open the system timer form |
 | Alarm | `!alarm HH:MM` | Open the system alarm form with a 24-hour time |
 | To-do | `!todo <text>` | Save a local incomplete to-do |
@@ -53,6 +54,7 @@ Titan reserves an explicit command mode in the app-drawer search field. This sec
 - Alarm times use strict 24-hour `HH:mm` format and open a prefilled system form.
 - Event dates are `today`, `tomorrow`, or `YYYY-MM-DD`; times use 24-hour `HH:mm`. Events use local time, a 30-minute default duration, and reject past start times.
 - Direct phone numbers contain 7 to 15 digits with an optional leading `+`; spaces, hyphens, and parentheses are ignored for recognition. Contact matching is case-insensitive and uses the longest contact-name prefix.
+- Save a concise Telegram bot username in Settings. `!hermes <message>` opens that bot in Telegram with the draft text prefilled and does not send it.
 - Multiple matching contacts or multiple numbers for a contact require a visible choice. A contact-name miss is a validation error.
 - When Contacts permission is denied, raw phone numbers still work. Name lookups report that contacts are unavailable and offer retry or Settings.
 - Incomplete or malformed input shows syntax and an example instead of a best guess.

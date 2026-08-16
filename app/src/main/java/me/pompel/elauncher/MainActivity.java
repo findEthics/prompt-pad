@@ -47,11 +47,12 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private static final String NUMBER_OF_APPS = "number_of_apps_preference";
+    private static final String HERMES_USERNAME_PREFERENCE = "hermes_username_preference";
+    private static final String HERMES_SETTINGS_MESSAGE = "Set the Hermes Telegram bot in Settings.";
     private ArrayList<App> appList;
     private ArrayList<SpannableString> appNames;
     private EditText search;
@@ -127,12 +128,8 @@ public class MainActivity extends AppCompatActivity {
     private void openAppWithIntent(Intent intent, boolean change) {
         keyboardAction(true);
         search.setText("");
-        safeStartActivity(intent);
-        if (change) changeLayout(true, false);
-    }
-
-    private void safeStartActivity(Intent intent) {
         if (intent != null) startActivity(intent);
+        if (change) changeLayout(true, false);
     }
 
     private void handleBack() {
@@ -238,10 +235,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            @Override
-            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-            }
         });
 
         search.setOnKeyListener((view, keyCode, event) -> {
@@ -285,7 +278,8 @@ public class MainActivity extends AppCompatActivity {
                     if (recyclerView.getAdapter() != commandAdapter) {
                         recyclerView.setAdapter(commandAdapter);
                     }
-                    if (!showContactPreview(charSequence.toString(), result)) {
+                    if (!showContactPreview(charSequence.toString(), result)
+                            && !showHermesUsernameHint(result)) {
                         commandAdapter.submit(result);
                     }
                 } else {
@@ -306,7 +300,7 @@ public class MainActivity extends AppCompatActivity {
             TextView textView = new TextView(this);
             textView.setTextColor(getColorFromAttr(androidx.appcompat.R.attr.colorPrimary));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 32);
-            textView.setTypeface(ResourcesCompat.getFont(this, R.font.jetbrains_mono));
+            textView.setTypeface(ResourcesCompat.getFont(this, R.font.poppins));
             textView.setPadding(0, 0, 0, 50);
             textView.setText(prefs.getString(Integer.toString(i), "App"));
             textView.setTag(i);
@@ -418,6 +412,25 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    private boolean showHermesUsernameHint(CommandQueryClassifier.Result result) {
+        if (result.getDisplayState() != CommandQueryClassifier.DisplayState.PREVIEW
+                || result.getCommand() != CommandQueryClassifier.Command.HERMES
+                || hermesUsername() != null) {
+            return false;
+        }
+        showHermesSettingsStatus();
+        return true;
+    }
+
+    private void showHermesSettingsStatus() {
+        showCommandStatus("Hermes bot not set", HERMES_SETTINGS_MESSAGE);
+    }
+
+    private String hermesUsername() {
+        return CommandParser.normalizeTelegramUsername(
+                prefs.getString(HERMES_USERNAME_PREFERENCE, ""));
+    }
+
     private boolean isNamedTextCommandWithoutContacts(String query) {
         if (contactsResolver.hasPermission()) {
             return false;
@@ -451,6 +464,16 @@ public class MainActivity extends AppCompatActivity {
                 return;
             case TEXT:
                 executeText((CommandParser.TextCommand) command, query);
+                return;
+            case HERMES:
+                CommandParser.HermesCommand hermes = (CommandParser.HermesCommand) command;
+                String username = hermesUsername();
+                if (username == null) {
+                    showHermesSettingsStatus();
+                    return;
+                }
+                launchCommandIntent(CommandIntentFactory.openTelegram(username, hermes.getMessage()),
+                        "Telegram is not available.", "Hermes draft opened.");
                 return;
             case TIMER:
                 CommandParser.TimerCommand timer = (CommandParser.TimerCommand) command;
@@ -677,7 +700,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private List<ResolveInfo> getLaunchersResolveInfos() {
-        List<ResolveInfo> launchers = new LinkedList<ResolveInfo>();
+        List<ResolveInfo> launchers = new ArrayList<>();
         PackageManager packageManager = getPackageManager();
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
@@ -703,22 +726,17 @@ public class MainActivity extends AppCompatActivity {
             return null;
         }
         ResolveInfo lastLauncher = launcherResolveInfos.get(launcherResolveInfos.size() - 1);
+        String packageName = lastLauncher.activityInfo.packageName;
 
-        if (lastLauncher != null) {
-            String packageName = lastLauncher.activityInfo.packageName;
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+        intent.addCategory(Intent.CATEGORY_HOME);
+        intent.addCategory(Intent.CATEGORY_DEFAULT);
+        intent.setPackage(packageName);
+        intent.setClassName(packageName, lastLauncher.activityInfo.name);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
 
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            intent.addCategory(Intent.CATEGORY_HOME);
-            intent.addCategory(Intent.CATEGORY_DEFAULT);
-            intent.setPackage(packageName);
-            intent.setClassName(packageName, lastLauncher.activityInfo.name);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
-
-            return intent;
-        } else {
-            return null;
-        }
+        return intent;
     }
 
     private class SwipeListener implements View.OnTouchListener {

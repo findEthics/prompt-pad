@@ -25,6 +25,7 @@ public class CommandIntentFactoryInstrumentedTest {
     public void safeSystemIntentsOnlyPrefillForms() {
         Intent dial = CommandIntentFactory.dial("+15551234567");
         Intent text = CommandIntentFactory.composeText("5551234567", "hello");
+        Intent telegram = CommandIntentFactory.openTelegram("alice", "hello there");
         Intent timer = CommandIntentFactory.setTimer(95, "Tea");
         Intent alarm = CommandIntentFactory.setAlarm(7, 5);
 
@@ -37,6 +38,11 @@ public class CommandIntentFactoryInstrumentedTest {
         assertEquals(Intent.ACTION_SENDTO, text.getAction());
         assertEquals("smsto:5551234567", text.getDataString());
         assertEquals("hello", text.getStringExtra("sms_body"));
+        assertEquals(Intent.ACTION_VIEW, telegram.getAction());
+        assertEquals("tg", telegram.getData().getScheme());
+        assertEquals("resolve", telegram.getData().getAuthority());
+        assertEquals("alice", telegram.getData().getQueryParameter("domain"));
+        assertEquals("hello there", telegram.getData().getQueryParameter("text"));
         assertEquals(95, timer.getIntExtra(AlarmClock.EXTRA_LENGTH, 0));
         assertEquals("Tea", timer.getStringExtra(AlarmClock.EXTRA_MESSAGE));
         assertEquals(AlarmClock.ACTION_SET_ALARM, alarm.getAction());

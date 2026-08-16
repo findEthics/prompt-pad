@@ -9,7 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        app:fontFamily="@font/jetbrains_mono"
+        app:fontFamily="@font/poppins"
         android:textAlignment="center"
         android:textColor="?attr/colorPrimary"
         android:textSize="32sp" />

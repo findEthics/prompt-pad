@@ -58,7 +58,7 @@ public final class NotesActivity extends AppCompatActivity {
         empty.setText("No notes yet");
         empty.setTextSize(20);
         empty.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        empty.setTypeface(ResourcesCompat.getFont(this, R.font.jetbrains_mono));
+        empty.setTypeface(ResourcesCompat.getFont(this, R.font.poppins));
         return empty;
     }
 
@@ -72,7 +72,7 @@ public final class NotesActivity extends AppCompatActivity {
                 row.setText(note.getText() + "\n" + DateFormat.getDateTimeInstance().format(
                         note.getCreatedAtMillis()));
                 row.setPadding(32, 24, 32, 24);
-                row.setTypeface(ResourcesCompat.getFont(NotesActivity.this, R.font.jetbrains_mono));
+                row.setTypeface(ResourcesCompat.getFont(NotesActivity.this, R.font.poppins));
                 return row;
             }
         });

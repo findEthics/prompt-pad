@@ -32,6 +32,10 @@ text-bare-raw-contacts-denied	!text 5551234567 hello there	INPUT_CHANGED	CONTACT
 text-bare-raw-contacts-denied-submit	!text 5551234567 hello there	SUBMIT	CONTACTS_DENIED	COMMAND_SEARCH	CONFIRMATION	TEXT	recipient=5551234567;message=hello there	OPEN_SMS_COMPOSER	Open a raw number in the prefilled SMS composer
 text-submit	!text +15551234567 hello there	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	TEXT	recipient=+15551234567;message=hello there	OPEN_SMS_COMPOSER	Open prefilled SMS composer without sending
 text-handler-unavailable	!text +15551234567 hello	SUBMIT	SMS_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	TEXT	recipient=+15551234567;message=hello	SHOW_UNAVAILABLE	No SMS app is available
+hermes-missing-message	!hermes	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	HERMES	-	SHOW_SYNTAX	Use !hermes <message>
+hermes-preview	!hermes hello there	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	HERMES	message=hello there	NONE	Telegram preview is ready
+hermes-submit	!hermes hello there	SUBMIT	DEFAULT	COMMAND_SEARCH	CONFIRMATION	HERMES	message=hello there	OPEN_TELEGRAM	Open Telegram with the message prefilled without sending
+hermes-handler-unavailable	!hermes hello	SUBMIT	TELEGRAM_UNAVAILABLE	COMMAND_SEARCH	UNAVAILABLE	HERMES	message=hello	SHOW_UNAVAILABLE	Telegram is not available
 timer-missing-duration	!timer	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	SUGGESTION	TIMER	-	SHOW_SYNTAX	Use !timer <duration> [label]
 timer-hours-preview	!timer 1h	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TIMER	duration=3600s	NONE	One-hour timer preview is ready
 timer-valid-preview	!timer 1h30m Tea	INPUT_CHANGED	DEFAULT	COMMAND_SEARCH	PREVIEW	TIMER	duration=5400s;label=Tea	NONE	Timer preview is ready

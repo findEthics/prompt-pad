@@ -48,6 +48,7 @@ public class CommandQueryClassifierTest {
     public void completeCommandsAreRecognizedIncludingHelp() {
         assertSuggestion("!call", CommandQueryClassifier.Command.CALL);
         assertSuggestion("!text", CommandQueryClassifier.Command.TEXT);
+        assertSuggestion("!hermes", CommandQueryClassifier.Command.HERMES);
         assertSuggestion("!timer", CommandQueryClassifier.Command.TIMER);
         assertSuggestion("!alarm", CommandQueryClassifier.Command.ALARM);
         assertSuggestion("!todo", CommandQueryClassifier.Command.TODO);
@@ -79,7 +80,7 @@ public class CommandQueryClassifierTest {
         assertEquals(CommandQueryClassifier.DisplayState.UNKNOWN_COMMAND, result.getDisplayState());
         assertNull(result.getCommand());
         assertTrue(result.getMessage().startsWith("Unknown command: zoom"));
-        assertEquals(12, result.getCommands().size());
+        assertEquals(13, result.getCommands().size());
         assertTrue(result.getCommands().contains(CommandQueryClassifier.Command.HELP));
 
         assertEquals(CommandQueryClassifier.DisplayState.UNKNOWN_COMMAND,
@@ -90,6 +91,7 @@ public class CommandQueryClassifierTest {
     public void incompleteAndMalformedCommandsShowGuidanceInsteadOfPreviews() {
         assertSuggestion("!call", CommandQueryClassifier.Command.CALL);
         assertSuggestion("!text +15551234567", CommandQueryClassifier.Command.TEXT);
+        assertSuggestion("!hermes", CommandQueryClassifier.Command.HERMES);
         assertSuggestion("!timer", CommandQueryClassifier.Command.TIMER);
         assertSuggestion("!alarm", CommandQueryClassifier.Command.ALARM);
         assertSuggestion("!todo", CommandQueryClassifier.Command.TODO);
@@ -105,6 +107,8 @@ public class CommandQueryClassifierTest {
         assertEquals(CommandQueryClassifier.DisplayState.VALIDATION_ERROR, result.getDisplayState());
         assertEquals(CommandQueryClassifier.Command.ALARM, result.getCommand());
         assertEquals("!alarm HH:MM", result.getSyntaxHint());
+
+        assertPreview("!hermes hello there", CommandQueryClassifier.Command.HERMES);
     }
 
     @Test
@@ -125,7 +129,7 @@ public class CommandQueryClassifierTest {
         CommandQueryClassifier.Result result = CommandQueryClassifier.classify(input);
         assertEquals(CommandQueryClassifier.Mode.COMMAND_SEARCH, result.getMode());
         assertEquals(CommandQueryClassifier.DisplayState.COMMAND_HELP, result.getDisplayState());
-        assertEquals(12, result.getCommands().size());
+        assertEquals(13, result.getCommands().size());
         assertTrue(result.isDisplayOnly());
     }
 

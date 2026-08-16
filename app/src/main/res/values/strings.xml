@@ -4,4 +4,6 @@
     <string name="number_of_apps_title">Number of Apps</string>
     <string name="dark_mode_title">Dark Mode</string>
     <string name="dark_mode_summary">Enable or disable dark mode</string>
+    <string name="hermes_username_title">Hermes Telegram Bot</string>
+    <string name="hermes_username_summary">Username used by !hermes</string>
 </resources>
