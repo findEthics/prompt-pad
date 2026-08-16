@@ -1,6 +1,7 @@
 package me.pompel.elauncher;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -10,13 +11,8 @@ import java.util.Locale;
  * or argument validation, so callers can safely use every result while the user is typing.
  */
 public final class CommandQueryClassifier {
-    private static final List<Command> COMMANDS;
-
-    static {
-        List<Command> commands = new ArrayList<>();
-        Collections.addAll(commands, Command.values());
-        COMMANDS = Collections.unmodifiableList(commands);
-    }
+    private static final List<CommandParser.Type> COMMANDS = Collections.unmodifiableList(
+            Arrays.asList(CommandParser.Type.values()));
 
     private CommandQueryClassifier() {
     }
@@ -35,23 +31,24 @@ public final class CommandQueryClassifier {
         int separator = firstWhitespace(commandQuery);
         String commandName = separator == -1 ? commandQuery : commandQuery.substring(0, separator);
         String arguments = separator == -1 ? "" : commandQuery.substring(separator).trim();
-        Command command = Command.fromName(commandName);
+        CommandParser.Type command = CommandParser.Type.fromName(commandName);
         if (command != null) {
             return classifyCommand(command, arguments);
         }
 
-        List<Command> matches = matchingCommands(commandName);
+        List<CommandParser.Type> matches = matchingCommands(commandName);
         if (!matches.isEmpty()) {
             return Result.suggestions(commandName, matches);
         }
         return Result.unknown(commandName);
     }
 
-    private static Result classifyCommand(Command command, String arguments) {
-        if (arguments.isEmpty() && (command == Command.CALL || command == Command.TEXT
-                || command == Command.HERMES
-                || command == Command.TIMER || command == Command.ALARM || command == Command.TODO
-                || command == Command.NOTE || command == Command.EVENT)) {
+    private static Result classifyCommand(CommandParser.Type command, String arguments) {
+        if (arguments.isEmpty() && (command == CommandParser.Type.CALL || command == CommandParser.Type.TEXT
+                || command == CommandParser.Type.HERMES
+                || command == CommandParser.Type.TIMER || command == CommandParser.Type.ALARM
+                || command == CommandParser.Type.TODO || command == CommandParser.Type.NOTE
+                || command == CommandParser.Type.EVENT)) {
             return Result.suggestion(command);
         }
         CommandParser.ParseResult parsed = new CommandParser().parse(
@@ -75,20 +72,15 @@ public final class CommandQueryClassifier {
         return -1;
     }
 
-    private static List<Command> matchingCommands(String prefix) {
+    private static List<CommandParser.Type> matchingCommands(String prefix) {
         String normalizedPrefix = prefix.toLowerCase(Locale.ROOT);
-        List<Command> matches = new ArrayList<>();
-        for (Command command : COMMANDS) {
-            if (command.name.startsWith(normalizedPrefix)) {
+        List<CommandParser.Type> matches = new ArrayList<>();
+        for (CommandParser.Type command : COMMANDS) {
+            if (command.getName().startsWith(normalizedPrefix)) {
                 matches.add(command);
             }
         }
         return Collections.unmodifiableList(matches);
-    }
-
-    public enum Mode {
-        APP_SEARCH,
-        COMMAND_SEARCH
     }
 
     public enum DisplayState {
@@ -100,61 +92,19 @@ public final class CommandQueryClassifier {
         UNKNOWN_COMMAND
     }
 
-    public enum Command {
-        HELP("help", "!help"),
-        CALL("call", "!call <contact-or-number>"),
-        TEXT("text", "!text <contact-or-number> <message>"),
-        HERMES("hermes", "!hermes <message>"),
-        TIMER("timer", "!timer <duration> [label]"),
-        ALARM("alarm", "!alarm HH:MM"),
-        TODO("todo", "!todo <text>"),
-        TODOS("todos", "!todos"),
-        NOTE("note", "!note <text>"),
-        NOTES("notes", "!notes"),
-        EVENT("event", "!event <date> <time> <title>"),
-        TORCH("t", "!torch"),
-        CAMERA("camera", "!camera");
-
-        private final String name;
-        private final String syntaxHint;
-
-        Command(String name, String syntaxHint) {
-            this.name = name;
-            this.syntaxHint = syntaxHint;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getSyntaxHint() {
-            return syntaxHint;
-        }
-
-        private static Command fromName(String name) {
-            for (Command command : COMMANDS) {
-                if (command.name.equalsIgnoreCase(name)) {
-                    return command;
-                }
-            }
-            return null;
-        }
-    }
-
     /** Immutable display model intended for direct conversion to adapter rows. */
     public static final class Result {
-        private final Mode mode;
         private final DisplayState displayState;
         private final String appQuery;
-        private final Command command;
+        private final CommandParser.Type command;
         private final String arguments;
-        private final List<Command> commands;
+        private final List<CommandParser.Type> commands;
         private final String message;
         private final String syntaxHint;
 
-        private Result(Mode mode, DisplayState displayState, String appQuery, Command command,
-                       String arguments, List<Command> commands, String message, String syntaxHint) {
-            this.mode = mode;
+        private Result(DisplayState displayState, String appQuery, CommandParser.Type command,
+                       String arguments, List<CommandParser.Type> commands, String message,
+                       String syntaxHint) {
             this.displayState = displayState;
             this.appQuery = appQuery;
             this.command = command;
@@ -165,42 +115,39 @@ public final class CommandQueryClassifier {
         }
 
         private static Result appSearch(String query) {
-            return new Result(Mode.APP_SEARCH, DisplayState.APP_RESULTS, query, null, "",
-                    Collections.<Command>emptyList(), "", "");
+            return new Result(DisplayState.APP_RESULTS, query, null, "",
+                    Collections.<CommandParser.Type>emptyList(), "", "");
         }
 
         private static Result help() {
-            return new Result(Mode.COMMAND_SEARCH, DisplayState.COMMAND_HELP, "", null, "",
+            return new Result(DisplayState.COMMAND_HELP, "", null, "",
                     COMMANDS, "Available commands", "");
         }
 
-        private static Result suggestions(String prefix, List<Command> commands) {
-            return new Result(Mode.COMMAND_SEARCH, DisplayState.SUGGESTION, "", null, "", commands,
+        private static Result suggestions(String prefix, List<CommandParser.Type> commands) {
+            return new Result(DisplayState.SUGGESTION, "", null, "", commands,
                     "Commands matching " + prefix, "");
         }
 
-        private static Result suggestion(Command command) {
-            return new Result(Mode.COMMAND_SEARCH, DisplayState.SUGGESTION, "", command, "",
-                    Collections.singletonList(command), "Use " + command.syntaxHint, command.syntaxHint);
+        private static Result suggestion(CommandParser.Type command) {
+            return new Result(DisplayState.SUGGESTION, "", command, "",
+                    Collections.singletonList(command), "Use " + command.getSyntaxHint(),
+                    command.getSyntaxHint());
         }
 
-        private static Result preview(Command command, String arguments) {
-            return new Result(Mode.COMMAND_SEARCH, DisplayState.PREVIEW, "", command, arguments,
-                    Collections.singletonList(command), "Preview only", command.syntaxHint);
+        private static Result preview(CommandParser.Type command, String arguments) {
+            return new Result(DisplayState.PREVIEW, "", command, arguments,
+                    Collections.singletonList(command), "Preview only", command.getSyntaxHint());
         }
 
-        private static Result validation(Command command, String message) {
-            return new Result(Mode.COMMAND_SEARCH, DisplayState.VALIDATION_ERROR, "", command, "",
-                    Collections.singletonList(command), message, command.syntaxHint);
+        private static Result validation(CommandParser.Type command, String message) {
+            return new Result(DisplayState.VALIDATION_ERROR, "", command, "",
+                    Collections.singletonList(command), message, command.getSyntaxHint());
         }
 
         private static Result unknown(String name) {
-            return new Result(Mode.COMMAND_SEARCH, DisplayState.UNKNOWN_COMMAND, "", null, "", COMMANDS,
+            return new Result(DisplayState.UNKNOWN_COMMAND, "", null, "", COMMANDS,
                     "Unknown command: " + name, "");
-        }
-
-        public Mode getMode() {
-            return mode;
         }
 
         public DisplayState getDisplayState() {
@@ -211,7 +158,7 @@ public final class CommandQueryClassifier {
             return appQuery;
         }
 
-        public Command getCommand() {
+        public CommandParser.Type getCommand() {
             return command;
         }
 
@@ -219,7 +166,7 @@ public final class CommandQueryClassifier {
             return arguments;
         }
 
-        public List<Command> getCommands() {
+        public List<CommandParser.Type> getCommands() {
             return commands;
         }
 
@@ -231,8 +178,5 @@ public final class CommandQueryClassifier {
             return syntaxHint;
         }
 
-        public boolean isDisplayOnly() {
-            return mode == Mode.COMMAND_SEARCH;
-        }
     }
 }

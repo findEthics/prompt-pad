@@ -20,7 +20,7 @@ public final class CommandParser {
     private final ContactResolver contactResolver;
 
     public CommandParser() {
-        this(new SystemClock(), null);
+        this(Clock.system(), null);
     }
 
     public CommandParser(Clock clock) {
@@ -28,7 +28,7 @@ public final class CommandParser {
     }
 
     public CommandParser(ContactResolver contactResolver) {
-        this(new SystemClock(), contactResolver);
+        this(Clock.system(), contactResolver);
     }
 
     public CommandParser(Clock clock, ContactResolver contactResolver) {
@@ -53,47 +53,30 @@ public final class CommandParser {
         }
 
         Parts parts = splitFirstWord(body);
-        String name = parts.first.toLowerCase(Locale.ROOT);
-        if ("call".equals(name)) {
-            return parseCall(parts.rest);
+        Type type = Type.fromName(parts.first);
+        if (type == null) {
+            return error(ErrorCode.UNKNOWN_COMMAND, "Unknown command: " + parts.first + ".", "!help");
         }
-        if ("text".equals(name)) {
-            return parseText(parts.rest);
+        switch (type) {
+            case CALL:
+                return parseCall(parts.rest);
+            case TEXT:
+                return parseText(parts.rest);
+            case HERMES:
+                return parseHermes(parts.rest);
+            case TIMER:
+                return parseTimer(parts.rest);
+            case ALARM:
+                return parseAlarm(parts.rest);
+            case NOTE:
+                return parseNote(parts.rest);
+            case TODO:
+                return parseTodo(parts.rest);
+            case EVENT:
+                return parseEvent(parts.rest);
+            default:
+                return parseNoArguments(parts.rest, type);
         }
-        if ("hermes".equals(name)) {
-            return parseHermes(parts.rest);
-        }
-        if ("timer".equals(name)) {
-            return parseTimer(parts.rest);
-        }
-        if ("alarm".equals(name)) {
-            return parseAlarm(parts.rest);
-        }
-        if ("note".equals(name)) {
-            return parseNote(parts.rest);
-        }
-        if ("todo".equals(name)) {
-            return parseTodo(parts.rest);
-        }
-        if ("todos".equals(name)) {
-            return parseNoArguments(parts.rest, Type.TODOS, "!todos");
-        }
-        if ("notes".equals(name)) {
-            return parseNoArguments(parts.rest, Type.NOTES, "!notes");
-        }
-        if ("event".equals(name)) {
-            return parseEvent(parts.rest);
-        }
-        if ("t".equals(name)) {
-            return parseNoArguments(parts.rest, Type.TORCH, "!t");
-        }
-        if ("camera".equals(name)) {
-            return parseNoArguments(parts.rest, Type.CAMERA, "!camera");
-        }
-        if ("help".equals(name)) {
-            return parseNoArguments(parts.rest, Type.HELP, "!help");
-        }
-        return error(ErrorCode.UNKNOWN_COMMAND, "Unknown command: " + parts.first + ".", "!help");
     }
 
     /**
@@ -311,7 +294,8 @@ public final class CommandParser {
                 DEFAULT_EVENT_DURATION_MINUTES));
     }
 
-    private ParseResult parseNoArguments(String arguments, Type type, String syntax) {
+    private ParseResult parseNoArguments(String arguments, Type type) {
+        String syntax = "!" + type.getName();
         if (arguments.length() != 0) {
             return error(ErrorCode.UNEXPECTED_ARGUMENT, syntax + " does not take arguments.", syntax);
         }
@@ -449,6 +433,20 @@ public final class CommandParser {
         long currentTimeMillis();
 
         TimeZone timeZone();
+
+        static Clock system() {
+            return new Clock() {
+                @Override
+                public long currentTimeMillis() {
+                    return System.currentTimeMillis();
+                }
+
+                @Override
+                public TimeZone timeZone() {
+                    return TimeZone.getDefault();
+                }
+            };
+        }
     }
 
     /** Resolves the longest contact-name prefix from a recipient-and-message input. */
@@ -457,19 +455,44 @@ public final class CommandParser {
     }
 
     public enum Type {
-        CALL,
-        TEXT,
-        HERMES,
-        TIMER,
-        ALARM,
-        NOTE,
-        TODO,
-        TODOS,
-        NOTES,
-        EVENT,
-        TORCH,
-        CAMERA,
-        HELP
+        HELP("help", "!help"),
+        CALL("call", "!call <contact-or-number>"),
+        TEXT("text", "!text <contact-or-number> <message>"),
+        HERMES("hermes", "!hermes <message>"),
+        TIMER("timer", "!timer <duration> [label]"),
+        ALARM("alarm", "!alarm HH:MM"),
+        TODO("todo", "!todo <text>"),
+        TODOS("todos", "!todos"),
+        NOTE("note", "!note <text>"),
+        NOTES("notes", "!notes"),
+        EVENT("event", "!event <date> <time> <title>"),
+        TORCH("t", "!torch"),
+        CAMERA("camera", "!camera");
+
+        private final String name;
+        private final String syntaxHint;
+
+        Type(String name, String syntaxHint) {
+            this.name = name;
+            this.syntaxHint = syntaxHint;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getSyntaxHint() {
+            return syntaxHint;
+        }
+
+        static Type fromName(String name) {
+            for (Type type : values()) {
+                if (type.name.equalsIgnoreCase(name)) {
+                    return type;
+                }
+            }
+            return null;
+        }
     }
 
     public enum ErrorCode {
@@ -829,15 +852,4 @@ public final class CommandParser {
 
     }
 
-    private static final class SystemClock implements Clock {
-        @Override
-        public long currentTimeMillis() {
-            return System.currentTimeMillis();
-        }
-
-        @Override
-        public TimeZone timeZone() {
-            return TimeZone.getDefault();
-        }
-    }
 }

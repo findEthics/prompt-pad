@@ -12,18 +12,18 @@ public final class NotesRepository {
     private static final String NOTES_KEY = "me.pompel.elauncher.notes.v1";
 
     private final KeyValueStore keyValueStore;
-    private final TimeSource timeSource;
+    private final CommandParser.Clock clock;
 
     public NotesRepository(KeyValueStore keyValueStore) {
-        this(keyValueStore, RepositorySupport.SYSTEM_TIME);
+        this(keyValueStore, CommandParser.Clock.system());
     }
 
-    public NotesRepository(KeyValueStore keyValueStore, TimeSource timeSource) {
-        if (keyValueStore == null || timeSource == null) {
-            throw new IllegalArgumentException("keyValueStore and timeSource must not be null");
+    public NotesRepository(KeyValueStore keyValueStore, CommandParser.Clock clock) {
+        if (keyValueStore == null || clock == null) {
+            throw new IllegalArgumentException("keyValueStore and clock must not be null");
         }
         this.keyValueStore = keyValueStore;
-        this.timeSource = timeSource;
+        this.clock = clock;
     }
 
     public Note add(String text) {
@@ -91,7 +91,7 @@ public final class NotesRepository {
         for (Note note : notes) {
             latest = Math.max(latest, note.getCreatedAtMillis());
         }
-        long now = timeSource.currentTimeMillis();
+        long now = clock.currentTimeMillis();
         return now <= latest && latest < Long.MAX_VALUE ? latest + 1 : now;
     }
 

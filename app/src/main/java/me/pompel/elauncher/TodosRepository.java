@@ -12,18 +12,18 @@ public final class TodosRepository {
     private static final String TODOS_KEY = "me.pompel.elauncher.todos.v1";
 
     private final KeyValueStore keyValueStore;
-    private final TimeSource timeSource;
+    private final CommandParser.Clock clock;
 
     public TodosRepository(KeyValueStore keyValueStore) {
-        this(keyValueStore, RepositorySupport.SYSTEM_TIME);
+        this(keyValueStore, CommandParser.Clock.system());
     }
 
-    public TodosRepository(KeyValueStore keyValueStore, TimeSource timeSource) {
-        if (keyValueStore == null || timeSource == null) {
-            throw new IllegalArgumentException("keyValueStore and timeSource must not be null");
+    public TodosRepository(KeyValueStore keyValueStore, CommandParser.Clock clock) {
+        if (keyValueStore == null || clock == null) {
+            throw new IllegalArgumentException("keyValueStore and clock must not be null");
         }
         this.keyValueStore = keyValueStore;
-        this.timeSource = timeSource;
+        this.clock = clock;
     }
 
     public Todo add(String text) {
@@ -114,7 +114,7 @@ public final class TodosRepository {
         for (Todo todo : todos) {
             latest = Math.max(latest, todo.getCreatedAtMillis());
         }
-        long now = timeSource.currentTimeMillis();
+        long now = clock.currentTimeMillis();
         return now <= latest && latest < Long.MAX_VALUE ? latest + 1 : now;
     }
 

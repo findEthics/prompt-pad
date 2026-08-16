@@ -20,9 +20,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
-import android.content.res.TypedArray;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.Editable;
@@ -31,7 +29,6 @@ import android.transition.Fade;
 import android.transition.Transition;
 import android.transition.TransitionManager;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.inputmethod.EditorInfo;
 import android.view.MotionEvent;
@@ -276,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
                 drawerEmpty.setVisibility(charSequence.length() == 0 ? View.VISIBLE : View.GONE);
                 CommandAdapter.styleCommandToken(MainActivity.this, search.getText());
                 CommandQueryClassifier.Result result = CommandQueryClassifier.classify(charSequence.toString());
-                if (result.getMode() == CommandQueryClassifier.Mode.COMMAND_SEARCH) {
+                if (result.getDisplayState() != CommandQueryClassifier.DisplayState.APP_RESULTS) {
                     // Keep delayed app-filter results from auto-launching while commands are shown.
                     adapter.pauseFiltering();
                     if (recyclerView.getAdapter() != commandAdapter) {
@@ -315,8 +312,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void submitCommand() {
         String query = search.getText().toString();
-        if (CommandQueryClassifier.classify(query).getMode()
-                != CommandQueryClassifier.Mode.COMMAND_SEARCH) {
+        if (CommandQueryClassifier.classify(query).getDisplayState()
+                == CommandQueryClassifier.DisplayState.APP_RESULTS) {
             return;
         }
 
@@ -348,8 +345,8 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean showContactPreview(String query, CommandQueryClassifier.Result result) {
         if (result.getDisplayState() != CommandQueryClassifier.DisplayState.PREVIEW
-                || (result.getCommand() != CommandQueryClassifier.Command.CALL
-                && result.getCommand() != CommandQueryClassifier.Command.TEXT)) {
+                || (result.getCommand() != CommandParser.Type.CALL
+                && result.getCommand() != CommandParser.Type.TEXT)) {
             return false;
         }
         CommandParser.ParseResult parsed = commandParser.parse(query);
@@ -388,7 +385,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean showHermesUsernameHint(CommandQueryClassifier.Result result) {
         if (result.getDisplayState() != CommandQueryClassifier.DisplayState.PREVIEW
-                || result.getCommand() != CommandQueryClassifier.Command.HERMES
+                || result.getCommand() != CommandParser.Type.HERMES
                 || hermesUsername() != null) {
             return false;
         }
@@ -582,21 +579,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void requestContactsFor(String query) {
         pendingPermissionCommand = query;
-        requestPermission(Manifest.permission.READ_CONTACTS, CONTACTS_PERMISSION_REQUEST,
-                "Contacts permission is required for named recipients.");
+        requestPermission(Manifest.permission.READ_CONTACTS, CONTACTS_PERMISSION_REQUEST);
     }
 
     private void requestCameraForTorch(String query) {
         pendingPermissionCommand = query;
-        requestPermission(Manifest.permission.CAMERA, CAMERA_PERMISSION_REQUEST,
-                "Camera permission is required for torch.");
+        requestPermission(Manifest.permission.CAMERA, CAMERA_PERMISSION_REQUEST);
     }
 
-    private void requestPermission(String permission, int requestCode, String denialMessage) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            showPermissionSettings(denialMessage);
-            return;
-        }
+    private void requestPermission(String permission, int requestCode) {
         if (checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED) {
             submitPendingPermissionCommand();
             return;
@@ -763,12 +754,4 @@ public class MainActivity extends AppCompatActivity {
         @Override public boolean onTouch (View view, MotionEvent motionEvent) { view.performClick(); return gestureDetector.onTouchEvent(motionEvent); }
     }
 
-    private int getColorFromAttr(int attr) {
-        TypedValue typedValue = new TypedValue();
-        int color;
-        try (TypedArray a = obtainStyledAttributes(typedValue.data, new int[]{attr})) {
-            color = a.getColor(0, 0);
-        }
-        return color;
-    }
 }

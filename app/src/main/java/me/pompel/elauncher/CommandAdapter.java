@@ -32,9 +32,6 @@ public class CommandAdapter extends RecyclerView.Adapter<CommandAdapter.CommandV
         rows.clear();
         switch (result.getDisplayState()) {
             case COMMAND_HELP:
-                rows.add(new Row(result.getMessage(), "", null, RowAction.NONE));
-                addCommands(result.getCommands());
-                break;
             case SUGGESTION:
                 rows.add(new Row(result.getMessage(), "", null, RowAction.NONE));
                 addCommands(result.getCommands());
@@ -71,8 +68,8 @@ public class CommandAdapter extends RecyclerView.Adapter<CommandAdapter.CommandV
         notifyDataSetChanged();
     }
 
-    private void addCommands(List<CommandQueryClassifier.Command> commands) {
-        for (CommandQueryClassifier.Command command : commands) {
+    private void addCommands(List<CommandParser.Type> commands) {
+        for (CommandParser.Type command : commands) {
             String query = "!" + command.getName();
             rows.add(new Row(query, command.getSyntaxHint(), query + " ", RowAction.EDIT));
         }
