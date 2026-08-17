@@ -14,6 +14,7 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.EditTextPreference;
+import androidx.preference.SwitchPreferenceCompat;
 import android.widget.Toast;
 
 public class SettingsActivity extends AppCompatActivity {
@@ -114,6 +115,17 @@ public class SettingsActivity extends AppCompatActivity {
                     keyboardPreference.setChecked(MainActivity.hasHardwareKeyboard(requireContext()));
                     prefs.edit().remove(MainActivity.HAS_KEYBOARD_PREFERENCE).apply();
                 }
+            }
+
+            SwitchPreferenceCompat naturalLanguagePreference =
+                    findPreference(MainActivity.NATURAL_LANGUAGE_PREFERENCE);
+            if (naturalLanguagePreference != null
+                    && !MediaPipeLlmInterpreter.isModelPresent(requireContext())) {
+                android.content.SharedPreferences prefs =
+                        androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext());
+                naturalLanguagePreference.setChecked(false);
+                naturalLanguagePreference.setEnabled(false);
+                prefs.edit().putBoolean(MainActivity.NATURAL_LANGUAGE_PREFERENCE, false).apply();
             }
 
             EditTextPreference hermesUsername = findPreference("hermes_username_preference");

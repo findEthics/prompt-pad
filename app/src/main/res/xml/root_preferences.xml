@@ -8,6 +8,10 @@
         app:key="has_keyboard_preference"
         app:title="@string/has_keyboard_title"
         app:summary="@string/has_keyboard_summary" />
+    <SwitchPreferenceCompat
+        app:key="natural_language_commands_preference"
+        app:title="@string/natural_language_commands_title"
+        app:summary="@string/natural_language_commands_summary" />
     <EditTextPreference
         app:key="hermes_username_preference"
         app:title="@string/hermes_username_title"

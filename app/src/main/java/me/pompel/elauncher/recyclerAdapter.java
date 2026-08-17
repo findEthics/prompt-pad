@@ -74,6 +74,10 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
                 if (!filteringEnabled || !activeQuery.equals(charSequence.toString())) return;
                 appListFiltered = (ArrayList<App>)filterResults.values;
 
+                if (appListFiltered.isEmpty()) {
+                    listener.onNoMatch(charSequence.toString());
+                }
+
                 for (App app : appListFiltered) {
                     String appName = app.appName.toString().toLowerCase();
                     String query = charSequence.toString().toLowerCase();
@@ -147,5 +151,8 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
     public interface RecyclerViewClickListener {
         void onClick(App app);
         void onLongClick(App app);
+
+        default void onNoMatch(String query) {
+        }
     }
 }

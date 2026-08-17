@@ -22,6 +22,8 @@ import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -44,11 +46,15 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     private static final String HERMES_USERNAME_PREFERENCE = "hermes_username_preference";
     static final String HAS_KEYBOARD_PREFERENCE = "has_keyboard_preference";
+    static final String NATURAL_LANGUAGE_PREFERENCE = "natural_language_commands_preference";
     private static final String HERMES_SETTINGS_MESSAGE = "Set the Hermes Telegram bot in Settings.";
+    private static final long NATURAL_LANGUAGE_DEBOUNCE_MILLIS = 350L;
     private ArrayList<App> appList;
     private EditText search;
     private View drawerEmpty;
@@ -67,6 +73,11 @@ public class MainActivity extends AppCompatActivity {
     private String pendingPermissionCommand;
     private long searchRevision;
     private boolean commandEnterDown;
+    private final Handler naturalLanguageHandler = new Handler(Looper.getMainLooper());
+    private final ExecutorService naturalLanguageExecutor = Executors.newSingleThreadExecutor();
+    private MediaPipeLlmInterpreter naturalLanguageInterpreter;
+    private Runnable pendingNaturalLanguageInference;
+    private long lastNaturalLanguageAttemptRevision = -1L;
 
     private final Runnable hideSavePill = () -> {
         savePill.animate()
@@ -193,6 +204,7 @@ public class MainActivity extends AppCompatActivity {
         todosRepository = new TodosRepository(new SharedPreferencesKeyValueStore(commandPreferences));
         groceryRepository = new GroceryRepository(new SharedPreferencesKeyValueStore(commandPreferences));
         commandParser = new CommandParser(contactsResolver);
+        naturalLanguageInterpreter = new MediaPipeLlmInterpreter(this);
 
         recyclerView = findViewById(R.id.recycler_view);
         adapter = new recyclerAdapter(appList, new recyclerAdapter.RecyclerViewClickListener() {
@@ -206,6 +218,11 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                 intent.setData(Uri.parse("package:" + app.packageId));
                 openAppWithIntent(intent, false);
+            }
+
+            @Override
+            public void onNoMatch(String query) {
+                scheduleNaturalLanguageInference(query);
             }
         });
         commandAdapter = new CommandAdapter(new CommandAdapter.Listener() {
@@ -290,6 +307,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 searchRevision++;
+                cancelNaturalLanguageInference();
                 drawerEmpty.setVisibility(charSequence.length() == 0 ? View.VISIBLE : View.GONE);
                 CommandAdapter.styleCommandToken(MainActivity.this, search.getText());
                 CommandQueryClassifier.Result result = CommandQueryClassifier.classify(charSequence.toString());
@@ -314,6 +332,76 @@ public class MainActivity extends AppCompatActivity {
 
         new SwipeListener(findViewById(R.id.HomeScreen));
 
+    }
+
+    @Override
+    protected void onDestroy() {
+        cancelNaturalLanguageInference();
+        naturalLanguageExecutor.shutdownNow();
+        if (naturalLanguageInterpreter != null) {
+            naturalLanguageInterpreter.close();
+        }
+        super.onDestroy();
+    }
+
+    private boolean naturalLanguageEnabled(String query) {
+        return query != null
+                && !query.isEmpty()
+                && query.charAt(0) != '!'
+                && prefs.getBoolean(NATURAL_LANGUAGE_PREFERENCE, false)
+                && naturalLanguageInterpreter.isAvailable();
+    }
+
+    private void scheduleNaturalLanguageInference(final String query) {
+        if (!naturalLanguageEnabled(query)
+                || !query.equals(search.getText().toString())
+                || lastNaturalLanguageAttemptRevision == searchRevision) {
+            return;
+        }
+        final long revision = searchRevision;
+        pendingNaturalLanguageInference = () -> {
+            pendingNaturalLanguageInference = null;
+            if (revision != searchRevision
+                    || !query.equals(search.getText().toString())
+                    || !naturalLanguageEnabled(query)) {
+                return;
+            }
+            lastNaturalLanguageAttemptRevision = revision;
+            showCommandStatus("Thinking", "Interpreting your request.");
+            naturalLanguageExecutor.submit(() -> {
+                String command = LlmOutputMapper.toCommandString(
+                        naturalLanguageInterpreter.interpret(query));
+                runOnUiThread(() -> finishNaturalLanguageInference(query, revision, command));
+            });
+        };
+        naturalLanguageHandler.postDelayed(pendingNaturalLanguageInference,
+                NATURAL_LANGUAGE_DEBOUNCE_MILLIS);
+    }
+
+    private void finishNaturalLanguageInference(String query, long revision, String command) {
+        if (revision != searchRevision || !query.equals(search.getText().toString())) {
+            return;
+        }
+        if (command == null) {
+            showAppSearchResults(query);
+            return;
+        }
+        search.setText(command);
+        search.setSelection(command.length());
+    }
+
+    private void showAppSearchResults(String query) {
+        if (recyclerView.getAdapter() != adapter) {
+            recyclerView.setAdapter(adapter);
+        }
+        adapter.filter(query);
+    }
+
+    private void cancelNaturalLanguageInference() {
+        if (pendingNaturalLanguageInference != null) {
+            naturalLanguageHandler.removeCallbacks(pendingNaturalLanguageInference);
+            pendingNaturalLanguageInference = null;
+        }
     }
 
     @Override

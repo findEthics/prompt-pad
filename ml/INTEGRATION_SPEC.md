@@ -61,10 +61,17 @@ free text (no leading !)
 
 ### B2. `LlmCommandInterpreter` (new)
 - Wraps MediaPipe `LlmInference` (GenAI / LiteRT). Loads the `.task` from the app files dir.
-- Model file is **downloaded on first enable**, not bundled. Verify checksum; store path in prefs.
+- Current development delivery is an adb-pushed file at
+  `getExternalFilesDir(null)/clauncher-gemma3-270m.task`; the feature stays disabled when it is
+  absent. The production delivery task is deliberately deferred: host one versioned `.task` at a
+  stable HTTPS URL, download it to a `.part` file with `HttpURLConnection` and HTTP Range resume,
+  verify a pinned SHA-256 before an atomic rename, then load only the verified file. Add
+  `android.permission.INTERNET` only when that downloader lands. Do not forget this deferred task.
 - **System prompt MUST be byte-identical to the training SYSTEM_PROMPT** in
   `dataset/generate_dataset.py`. Copy it verbatim (see below). If they drift, accuracy drops.
-- Generation: greedy/deterministic, `maxTokens ≈ 64`, temperature 0. Prefer CPU backend first
+- Generation: greedy/deterministic, temperature 0, with an output budget of about 64 tokens. The
+  MediaPipe `maxTokens` option includes the prompt, so the current implementation uses a total
+  budget of 256. Prefer CPU backend first
   (GPU q4 `.task` can silently emit 0 tokens — known LiteRT-LM issue).
 
 ### B3. `LlmOutputMapper` (new, pure Java, unit-tested — no Android deps)
