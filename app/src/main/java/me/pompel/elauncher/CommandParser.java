@@ -73,6 +73,8 @@ public final class CommandParser {
                 return parseNote(parts.rest);
             case TODO:
                 return parseTodo(parts.rest);
+            case GROCERY:
+                return parseGrocery(parts.rest);
             case EVENT:
                 return parseEvent(parts.rest);
             default:
@@ -250,6 +252,11 @@ public final class CommandParser {
     private ParseResult parseTodo(String arguments) {
         return arguments.length() == 0 ? missing("!todo <text>")
                 : ParseResult.command(new TodoCommand(arguments));
+    }
+
+    private ParseResult parseGrocery(String arguments) {
+        return arguments.length() == 0 ? missing("!grocery <item>")
+                : ParseResult.command(new GroceryCommand(arguments));
     }
 
     private ParseResult parseEvent(String arguments) {
@@ -466,6 +473,8 @@ public final class CommandParser {
         TODOS("todos", "!todos"),
         NOTE("note", "!note <text>"),
         NOTES("notes", "!notes"),
+        GROCERY("grocery", "!grocery <item>"),
+        GROCERIES("groceries", "!groceries"),
         EVENT("event", "!event <date> <time> <title>"),
         TORCH("t", "!torch"),
         CAMERA("camera", "!camera");
@@ -754,6 +763,27 @@ public final class CommandParser {
 
         public String getText() {
             return text;
+        }
+    }
+
+    public static final class GroceryCommand implements Command {
+        private final String item;
+
+        private GroceryCommand(String item) {
+            this.item = item;
+        }
+
+        @Override
+        public Type getType() {
+            return Type.GROCERY;
+        }
+
+        public String getItem() {
+            return item;
+        }
+
+        public String getText() {
+            return item;
         }
     }
 

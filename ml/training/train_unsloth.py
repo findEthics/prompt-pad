@@ -117,19 +117,32 @@ def main():
 
     # 7) Predict on eval split -> preds.jsonl (feeds eval/evaluate.py --pred).
     if args.predict:
-        from transformers import TextStreamer  # noqa
         rows = [json.loads(l) for l in open(args.eval) if l.strip()]
-        FastModel.for_inference(model)
         preds = []
-        for r in rows:
-            msgs = [m for m in r["messages"] if m["role"] in ("system", "user")]
-            inputs = tokenizer.apply_chat_template(
-                msgs, add_generation_prompt=True, return_tensors="pt").to(model.device)
-            out_ids = model.generate(input_ids=inputs, max_new_tokens=64,
-                                     do_sample=False, temperature=None, top_p=None)
-            text = tokenizer.decode(out_ids[0][inputs.shape[1]:],
-                                    skip_special_tokens=True).strip()
-            preds.append(text.replace("\n", " "))
+        if hasattr(model, "device"):
+            FastModel.for_inference(model)
+            for r in rows:
+                msgs = [m for m in r["messages"] if m["role"] in ("system", "user")]
+                inputs = tokenizer.apply_chat_template(
+                    msgs, add_generation_prompt=True, return_tensors="pt").to(model.device)
+                out_ids = model.generate(input_ids=inputs, max_new_tokens=64,
+                                         do_sample=False, temperature=None, top_p=None)
+                text = tokenizer.decode(out_ids[0][inputs.shape[1]:],
+                                        skip_special_tokens=True).strip()
+                preds.append(text.replace("\n", " "))
+        else:
+            # Unsloth uses native MLX on Apple Silicon; its model has no torch device.
+            from mlx_lm import generate, load
+            from mlx_lm.sample_utils import make_sampler
+            mlx_model, mlx_tokenizer = load(str(out / "merged"))
+            sampler = make_sampler(temp=0)
+            for r in rows:
+                msgs = [m for m in r["messages"] if m["role"] in ("system", "user")]
+                prompt = mlx_tokenizer.apply_chat_template(
+                    msgs, tokenize=False, add_generation_prompt=True)
+                text = generate(mlx_model, mlx_tokenizer, prompt,
+                                max_tokens=64, sampler=sampler).strip()
+                preds.append(text.replace("\n", " "))
         with open(out / "preds.jsonl", "w") as f:
             f.write("\n".join(preds) + "\n")
         print(f"[done] wrote {out/'preds.jsonl'} ({len(preds)} rows). "

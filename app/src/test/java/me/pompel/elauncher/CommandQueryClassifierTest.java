@@ -47,6 +47,8 @@ public class CommandQueryClassifierTest {
         assertSuggestion("!alarm", CommandParser.Type.ALARM);
         assertSuggestion("!todo", CommandParser.Type.TODO);
         assertPreview("!todos", CommandParser.Type.TODOS);
+        assertSuggestion("!grocery", CommandParser.Type.GROCERY);
+        assertPreview("!groceries", CommandParser.Type.GROCERIES);
         assertSuggestion("!note", CommandParser.Type.NOTE);
         assertPreview("!notes", CommandParser.Type.NOTES);
         assertSuggestion("!event", CommandParser.Type.EVENT);
@@ -73,7 +75,7 @@ public class CommandQueryClassifierTest {
         assertEquals(CommandQueryClassifier.DisplayState.UNKNOWN_COMMAND, result.getDisplayState());
         assertNull(result.getCommand());
         assertTrue(result.getMessage().startsWith("Unknown command: zoom"));
-        assertEquals(12, result.getCommands().size());
+        assertEquals(14, result.getCommands().size());
 
         assertEquals(CommandQueryClassifier.DisplayState.UNKNOWN_COMMAND,
                 CommandQueryClassifier.classify("!torch").getDisplayState());
@@ -117,7 +119,7 @@ public class CommandQueryClassifierTest {
     private static void assertHelp(String input) {
         CommandQueryClassifier.Result result = CommandQueryClassifier.classify(input);
         assertEquals(CommandQueryClassifier.DisplayState.COMMAND_HELP, result.getDisplayState());
-        assertEquals(12, result.getCommands().size());
+        assertEquals(14, result.getCommands().size());
     }
 
     private static void assertPreview(String input, CommandParser.Type command) {

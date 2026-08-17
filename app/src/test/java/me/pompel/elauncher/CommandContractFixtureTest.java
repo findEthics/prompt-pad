@@ -32,7 +32,8 @@ public class CommandContractFixtureTest {
             "DIALER_UNAVAILABLE", "SMS_UNAVAILABLE", "TELEGRAM_UNAVAILABLE", "CLOCK_UNAVAILABLE", "PAST_EVENT",
             "FUTURE_EVENT", "CALENDAR_UNAVAILABLE", "TORCH_AVAILABLE", "TORCH_UNAVAILABLE",
             "TORCH_ON", "TORCH_OFF", "CAMERA_DENIED", "CAMERA_UNAVAILABLE", "TODOS_EXIST",
-            "TODO_ITEM_EXISTS", "TODOS_OPEN", "NOTES_EXIST", "NOTE_ITEM_EXISTS", "NOTES_OPEN"
+            "TODO_ITEM_EXISTS", "TODOS_OPEN", "NOTES_EXIST", "NOTE_ITEM_EXISTS", "NOTES_OPEN",
+            "GROCERIES_EXIST", "GROCERY_ITEM_EXISTS", "GROCERIES_OPEN"
     );
     private static final Set<String> MODES = values("APP_SEARCH", "COMMAND_SEARCH");
     private static final Set<String> STATES = values(
@@ -42,14 +43,15 @@ public class CommandContractFixtureTest {
     );
     private static final Set<String> COMMANDS = values(
             "-", "CALL", "TEXT", "HERMES", "TIMER", "ALARM", "TODO", "TODOS", "NOTE", "NOTES",
-            "EVENT", "TORCH", "CAMERA", "UNKNOWN"
+            "GROCERY", "GROCERIES", "EVENT", "TORCH", "CAMERA", "UNKNOWN"
     );
     private static final Set<String> EFFECTS = values(
             "NONE", "FILTER_APPS", "SHOW_HELP", "SHOW_SYNTAX", "SHOW_CONTACT_CHOICES",
             "OFFER_SETTINGS", "SHOW_UNAVAILABLE", "OPEN_DIALER", "OPEN_SMS_COMPOSER",
-            "OPEN_TIMER", "SAVE_ALARM", "OPEN_TELEGRAM", "SAVE_TODO", "OPEN_TODOS", "SAVE_NOTE", "OPEN_NOTES",
+            "OPEN_TIMER", "SAVE_ALARM", "OPEN_TELEGRAM", "SAVE_TODO", "OPEN_TODOS", "SAVE_GROCERY", "OPEN_GROCERIES",
+            "SAVE_NOTE", "OPEN_NOTES",
             "OPEN_CALENDAR", "TOGGLE_TORCH", "OPEN_CAMERA", "COMPLETE_TODO", "DELETE_TODO",
-            "DELETE_NOTE", "RETURN_TO_LAUNCHER"
+            "COMPLETE_GROCERY", "DELETE_GROCERY", "DELETE_NOTE", "RETURN_TO_LAUNCHER"
     );
     private static final Set<String> DISPLAY_EFFECTS = values(
             "NONE", "SHOW_HELP", "SHOW_SYNTAX", "SHOW_CONTACT_CHOICES", "OFFER_SETTINGS",
@@ -204,6 +206,21 @@ public class CommandContractFixtureTest {
                         listBehaviors.add("TODOS_BACK");
                     }
                 }
+
+                if ("GROCERIES".equals(fields[6])) {
+                    if ("order=incomplete_first".equals(fields[7])) {
+                        listBehaviors.add("GROCERIES_ORDER");
+                    }
+                    if ("COMPLETE_GROCERY".equals(fields[8])) {
+                        listBehaviors.add("GROCERIES_COMPLETE");
+                    }
+                    if ("DELETE_GROCERY".equals(fields[8])) {
+                        listBehaviors.add("GROCERIES_DELETE");
+                    }
+                    if ("RETURN_TO_LAUNCHER".equals(fields[8])) {
+                        listBehaviors.add("GROCERIES_BACK");
+                    }
+                }
             }
 
             assertFalse("Fixture must define at least one contract case", caseIds.isEmpty());
@@ -221,9 +238,13 @@ public class CommandContractFixtureTest {
             assertTrue("Fixture must cover a seven-digit number", hasMinimumLengthNumberCase);
             assertTrue("Fixture must cover a fifteen-digit number", hasMaximumLengthNumberCase);
             assertTrue("Fixture must cover case-insensitive contact matching", hasCaseInsensitiveContactCase);
+            assertTrue("Fixture must cover grocery list behavior", listBehaviors.containsAll(values(
+                    "GROCERIES_ORDER", "GROCERIES_COMPLETE", "GROCERIES_DELETE", "GROCERIES_BACK"
+            )));
             assertEquals("Fixture must cover notes and to-do list behavior", values(
                     "NOTES_ORDER", "NOTES_DELETE", "NOTES_BACK", "TODOS_ORDER", "TODOS_COMPLETE",
-                    "TODOS_DELETE", "TODOS_BACK"
+                    "TODOS_DELETE", "TODOS_BACK", "GROCERIES_ORDER", "GROCERIES_COMPLETE",
+                    "GROCERIES_DELETE", "GROCERIES_BACK"
             ), listBehaviors);
         }
     }

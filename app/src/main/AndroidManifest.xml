@@ -42,6 +42,10 @@
             android:exported="false"
             android:label="To-dos" />
         <activity
+            android:name=".GroceryActivity"
+            android:exported="false"
+            android:label="Groceries" />
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:windowSoftInputMode="stateAlwaysHidden|adjustResize" >

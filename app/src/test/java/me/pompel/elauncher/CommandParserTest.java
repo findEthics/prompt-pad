@@ -21,6 +21,8 @@ public class CommandParserTest {
                 CommandParser.ZeroPayloadCommand.class);
         assertCommand(parser.parse("!notes"), CommandParser.Type.NOTES,
                 CommandParser.ZeroPayloadCommand.class);
+        assertCommand(parser.parse("!groceries"), CommandParser.Type.GROCERIES,
+                CommandParser.ZeroPayloadCommand.class);
         assertCommand(parser.parse("!t"), CommandParser.Type.TORCH,
                 CommandParser.ZeroPayloadCommand.class);
         assertCommand(parser.parse("!camera"), CommandParser.Type.CAMERA,
@@ -37,11 +39,15 @@ public class CommandParserTest {
                 .getCommand();
         CommandParser.TodoCommand todo = (CommandParser.TodoCommand) parser.parse("!todo Buy batteries")
                 .getCommand();
+        CommandParser.GroceryCommand grocery = (CommandParser.GroceryCommand) parser
+                .parse("!grocery Milk").getCommand();
 
         assertEquals("Meter reading 42", note.getText());
         assertEquals("Buy batteries", todo.getText());
+        assertEquals("Milk", grocery.getItem());
         assertError(parser.parse("!note"), CommandParser.ErrorCode.MISSING_ARGUMENT);
         assertError(parser.parse("!todo"), CommandParser.ErrorCode.MISSING_ARGUMENT);
+        assertError(parser.parse("!grocery"), CommandParser.ErrorCode.MISSING_ARGUMENT);
         assertError(parser.parse("!unknown"), CommandParser.ErrorCode.UNKNOWN_COMMAND);
         assertError(parser.parse("calendar"), CommandParser.ErrorCode.NOT_A_COMMAND);
     }

@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
     private TorchController torchController;
     private NotesRepository notesRepository;
     private TodosRepository todosRepository;
+    private GroceryRepository groceryRepository;
     private CommandParser commandParser;
     private String pendingPermissionCommand;
     private long searchRevision;
@@ -190,6 +191,7 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences commandPreferences = getSharedPreferences("command_data", MODE_PRIVATE);
         notesRepository = new NotesRepository(new SharedPreferencesKeyValueStore(commandPreferences));
         todosRepository = new TodosRepository(new SharedPreferencesKeyValueStore(commandPreferences));
+        groceryRepository = new GroceryRepository(new SharedPreferencesKeyValueStore(commandPreferences));
         commandParser = new CommandParser(contactsResolver);
 
         recyclerView = findViewById(R.id.recycler_view);
@@ -480,6 +482,14 @@ public class MainActivity extends AppCompatActivity {
             case TODOS:
                 launchCommandIntent(new Intent(this, TodosActivity.class),
                         "The to-do list is unavailable.");
+                return;
+            case GROCERY:
+                groceryRepository.add(((CommandParser.GroceryCommand) command).getItem());
+                showSavedPill("added to groceries");
+                return;
+            case GROCERIES:
+                launchCommandIntent(new Intent(this, GroceryActivity.class),
+                        "The grocery list is unavailable.");
                 return;
             case NOTE:
                 notesRepository.add(((CommandParser.NoteCommand) command).getText());
