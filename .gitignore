@@ -14,3 +14,15 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# ML training setup (ml/) — never commit model weights or envs
+ml/export/*
+!ml/export/.gitkeep
+ml/**/__pycache__/
+ml/**/*.pyc
+ml/**/*.task
+ml/**/*.gguf
+ml/**/merged/
+ml/**/lora/
+ml/**/trainer/
+ml/**/.venv/
