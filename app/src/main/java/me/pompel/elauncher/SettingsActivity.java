@@ -89,6 +89,8 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     public static class SettingsFragment extends PreferenceFragmentCompat {
+        private ModelDownloader modelDownloader;
+
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             setPreferencesFromResource(R.xml.root_preferences, rootKey);
@@ -124,8 +126,14 @@ public class SettingsActivity extends AppCompatActivity {
                 android.content.SharedPreferences prefs =
                         androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext());
                 naturalLanguagePreference.setChecked(false);
-                naturalLanguagePreference.setEnabled(false);
                 prefs.edit().putBoolean(MainActivity.NATURAL_LANGUAGE_PREFERENCE, false).apply();
+                naturalLanguagePreference.setOnPreferenceChangeListener((preference, newValue) -> {
+                    if (!Boolean.TRUE.equals(newValue)) {
+                        return true;
+                    }
+                    startModelDownload(naturalLanguagePreference);
+                    return false;
+                });
             }
 
             EditTextPreference hermesUsername = findPreference("hermes_username_preference");
@@ -153,6 +161,69 @@ public class SettingsActivity extends AppCompatActivity {
                     return true;
                 });
             }
+        }
+
+        private void startModelDownload(SwitchPreferenceCompat preference) {
+            preference.setEnabled(false);
+            preference.setSummary("Downloading model...");
+            modelDownloader = new ModelDownloader(requireContext(), new ModelDownloader.Listener() {
+                @Override
+                public void onProgress(int percent) {
+                    if (percent >= 0) {
+                        preference.setSummary(percent + "% downloading...");
+                    } else {
+                        preference.setSummary("Downloading model...");
+                    }
+                }
+
+                @Override
+                public void onSuccess() {
+                    preference.setChecked(true);
+                    preference.setEnabled(true);
+                    preference.setSummary(R.string.natural_language_commands_summary);
+                    androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext())
+                            .edit()
+                            .putBoolean(MainActivity.NATURAL_LANGUAGE_PREFERENCE, true)
+                            .apply();
+                    modelDownloader = null;
+                    Toast.makeText(requireContext(), "Natural-language model downloaded.",
+                            Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onError(String message) {
+                    preference.setChecked(false);
+                    preference.setEnabled(true);
+                    preference.setSummary(R.string.natural_language_commands_summary);
+                    androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext())
+                            .edit()
+                            .putBoolean(MainActivity.NATURAL_LANGUAGE_PREFERENCE, false)
+                            .apply();
+                    modelDownloader = null;
+                    Toast.makeText(requireContext(), "Model download failed: " + message,
+                            Toast.LENGTH_LONG).show();
+                }
+
+                @Override
+                public void onCancelled() {
+                    preference.setChecked(false);
+                    preference.setEnabled(true);
+                    preference.setSummary(R.string.natural_language_commands_summary);
+                    modelDownloader = null;
+                    Toast.makeText(requireContext(), "Model download cancelled.",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+            modelDownloader.start();
+        }
+
+        @Override
+        public void onDestroy() {
+            if (modelDownloader != null) {
+                modelDownloader.close();
+                modelDownloader = null;
+            }
+            super.onDestroy();
         }
     }
 }

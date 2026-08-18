@@ -27,4 +27,5 @@ ml/**/lora/
 ml/**/trainer/
 ml/**/.venv/
 .env
+.env.*
 .ebv

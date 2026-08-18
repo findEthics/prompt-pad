@@ -115,7 +115,23 @@ Convert `export/merged/` to the MediaPipe `.task` (INT4) for Android. Follow Goo
 
 ---
 
-## Phase 5 — Integrate into the app
+## Phase 5 — Publish the model (confirmation-gated)
+
+After the exported `.task` passes the local smoke test, put a fresh Hugging Face token in the
+ignored root `.env` as `HF_TOKEN=...`, then run the publisher. It creates the public model repo
+if needed, uploads the model, and writes the immutable-commit manifest used by Android:
+
+```bash
+ml/.venv/bin/python ml/publish_model.py \
+  --task ml/export/prompt-pad-gemma3-270m.task \
+  --repo findethics-labs/prompt-pad-gemma3-270m \
+  --public
+```
+
+The command prints the SHA-256 and repository visibility before requiring the typed `PUBLISH`
+confirmation. Use `--yes` only for an already-approved non-interactive release job.
+
+## Phase 6 — Integrate into the app
 
 1. From `physical-keyboard`, cut the new branch:
    ```bash
@@ -138,4 +154,4 @@ Convert `export/merged/` to the MediaPipe `.task` (INT4) for Android. Follow Goo
 - Did not write Java — the integration is specified in `INTEGRATION_SPEC.md` for you to implement,
   because you built the app and have the full repo + Android toolchain locally.
 
-Report back: the eval gate output (Phase 3) and the PR link (Phase 5).
+Report back: the eval gate output (Phase 3) and the PR link (Phase 6).

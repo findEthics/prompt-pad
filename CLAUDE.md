@@ -82,6 +82,16 @@ adb -s emulator-5554 push ml/export/retrained-mediapipe/prompt-pad-gemma3-270m.t
 ./gradlew connectedDebugAndroidTest
 ```
 
+Publish the validated model only after the local smoke test and explicit release approval. Put a
+fresh `HF_TOKEN` in the ignored root `.env`, then run the confirmation-gated publisher:
+
+```bash
+ml/.venv/bin/python ml/publish_model.py \
+  --task ml/export/prompt-pad-gemma3-270m.task \
+  --repo findethics-labs/prompt-pad-gemma3-270m \
+  --public
+```
+
 Keep the model opt-in and preserve the no-auto-call/send invariant. A missing or malformed model output must fall back to app search; only the existing parser and intent path may execute a command.
 
 ## Architecture

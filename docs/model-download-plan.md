@@ -1,6 +1,6 @@
 # Plan: On-Demand Hugging Face Model Download (latest-on-first-download)
 
-Status: DESIGN — not yet implemented.
+Status: IMPLEMENTED — model publication and device validation pending.
 Branch: physical-keyboard-LLM
 
 ## Goal
@@ -18,8 +18,8 @@ the existing ML training pipeline.
 - Repo: `findethics-labs/prompt-pad-gemma3-270m` (created by the publish script if absent).
 - Default upload artifact: `ml/export/prompt-pad-gemma3-270m.task` (`--task` overrides).
 - Download UX: toggle-on starts the download, progress shown in the preference summary.
-- No new libraries (PLAN.md hard constraint): stdlib `HttpsURLConnection`, `MessageDigest`,
-  Android `org.json`. No OkHttp / WorkManager / notification.
+- No new libraries (PLAN.md hard constraint): stdlib `HttpsURLConnection`, `MessageDigest`, and
+  a small Java standard-library manifest parser. No OkHttp / WorkManager / notification.
 
 ## Key tradeoff (acknowledged)
 Auto-latest is incompatible with a single hardcoded SHA-256 in the APK. Integrity moves to a
@@ -59,7 +59,7 @@ Uses already-installed `huggingface_hub 1.27.0`.
 ## Part B — On-device downloader
 
 ### New file: `app/src/main/java/me/pompel/elauncher/ModelDownloader.java`
-Plain Java, stdlib + Android `org.json` (no new deps).
+Plain Java and Android APIs only (no new deps).
 - One hardcoded constant:
   `MANIFEST_URL = https://huggingface.co/findethics-labs/prompt-pad-gemma3-270m/resolve/main/model-manifest.json`
 - Fetch + parse manifest → immutable `url` + expected `sha256`.
@@ -88,7 +88,7 @@ Destination is exactly `MediaPipeLlmInterpreter.modelFile()` — the load path i
 ### Tests: `app/src/test/.../ModelDownloaderTest.java`
 - Resume-offset from an existing `.part` length.
 - SHA-256 verify pass/fail.
-- Manifest JSON parse (reuses the org.json test setup `LlmOutputMapperTest` already relies on).
+- Manifest JSON parse (pure Java, JVM-testable).
 Extract the pure pieces as static helpers. Skip a full network mock (YAGNI).
 
 ---
