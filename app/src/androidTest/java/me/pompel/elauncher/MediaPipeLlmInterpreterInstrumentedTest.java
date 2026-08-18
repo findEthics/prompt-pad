@@ -1,12 +1,15 @@
 package me.pompel.elauncher;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.content.Intent;
 import android.os.SystemClock;
+import android.view.KeyEvent;
 import android.widget.EditText;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -40,7 +43,24 @@ public class MediaPipeLlmInterpreterInstrumentedTest {
     }
 
     @Test
-    public void naturalLanguageSuggestsWithoutSubmitting() {
+    public void rejectsIncompleteNaturalLanguageCommands() {
+        Context context = ApplicationProvider.getApplicationContext();
+        Assume.assumeTrue(MediaPipeLlmInterpreter.isModelPresent(context));
+
+        MediaPipeLlmInterpreter interpreter = new MediaPipeLlmInterpreter(context);
+        try {
+            for (String input : new String[] {"wake", "remind", "buy", "sh", "ala"}) {
+                String raw = interpreter.interpret(input);
+                assertNull(input + " was mapped to a command: " + raw,
+                        LlmOutputMapper.toCommandString(raw));
+            }
+        } finally {
+            interpreter.close();
+        }
+    }
+
+    @Test
+    public void naturalLanguageRequiresEnterBeforeExecuting() {
         Context context = ApplicationProvider.getApplicationContext();
         Assume.assumeTrue(MediaPipeLlmInterpreter.isModelPresent(context));
         android.content.SharedPreferences preferences =
@@ -58,19 +78,34 @@ public class MediaPipeLlmInterpreterInstrumentedTest {
                 ((EditText) currentActivity.findViewById(R.id.search)).setText("buy milk");
             });
 
-            String query = "";
+            SystemClock.sleep(1500);
+            final String[] pausedQuery = {""};
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> pausedQuery[0] =
+                    ((EditText) currentActivity.findViewById(R.id.search)).getText().toString());
+            assertEquals("buy milk", pausedQuery[0]);
+
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+                EditText search = currentActivity.findViewById(R.id.search);
+                assertTrue(search.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN,
+                        KeyEvent.KEYCODE_ENTER)));
+                assertTrue(search.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP,
+                        KeyEvent.KEYCODE_ENTER)));
+            });
+
+            String query = pausedQuery[0];
             for (int attempt = 0; attempt < 20; attempt++) {
                 final String[] currentQuery = {""};
                 InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
                         currentQuery[0] = ((EditText) currentActivity.findViewById(R.id.search))
                                 .getText().toString());
                 query = currentQuery[0];
-                if ("!grocery milk".equals(query)) {
+                if (query.isEmpty()) {
                     break;
                 }
                 SystemClock.sleep(500);
             }
-            assertEquals("!grocery milk", query);
+            assertEquals("", query);
+            assertGrocerySaved(context, "milk");
         } finally {
             if (activity != null) {
                 activity.finish();
@@ -83,5 +118,17 @@ public class MediaPipeLlmInterpreterInstrumentedTest {
             }
             editor.commit();
         }
+    }
+
+    private static void assertGrocerySaved(Context context, String item) {
+        GroceryRepository repository = new GroceryRepository(new SharedPreferencesKeyValueStore(
+                context.getSharedPreferences("command_data", Context.MODE_PRIVATE)));
+        for (GroceryItem grocery : repository.list()) {
+            if (item.equals(grocery.getItem())) {
+                repository.delete(grocery.getId());
+                return;
+            }
+        }
+        fail("Expected grocery was not saved: " + item);
     }
 }

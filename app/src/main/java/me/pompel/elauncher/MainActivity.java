@@ -220,10 +220,6 @@ public class MainActivity extends AppCompatActivity {
                 openAppWithIntent(intent, false);
             }
 
-            @Override
-            public void onNoMatch(String query) {
-                scheduleNaturalLanguageInference(query);
-            }
         });
         commandAdapter = new CommandAdapter(new CommandAdapter.Listener() {
             @Override
@@ -346,7 +342,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean naturalLanguageEnabled(String query) {
         return query != null
-                && !query.isEmpty()
+                && query.trim().length() >= 4
                 && query.charAt(0) != '!'
                 && prefs.getBoolean(NATURAL_LANGUAGE_PREFERENCE, false)
                 && naturalLanguageInterpreter.isAvailable();
@@ -387,7 +383,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         search.setText(command);
-        search.setSelection(command.length());
+        submitCommand();
     }
 
     private void showAppSearchResults(String query) {
@@ -444,10 +440,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean submitCommandIfApplicable() {
-        if (search.getText().length() == 0 || search.getText().charAt(0) != '!') {
+        String query = search.getText().toString();
+        if (query.length() > 0 && query.charAt(0) == '!') {
+            submitCommand();
+            return true;
+        }
+        if (!naturalLanguageEnabled(query)) {
             return false;
         }
-        submitCommand();
+        scheduleNaturalLanguageInference(query);
         return true;
     }
 

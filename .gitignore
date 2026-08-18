@@ -26,3 +26,4 @@ ml/**/merged/
 ml/**/lora/
 ml/**/trainer/
 ml/**/.venv/
+.env

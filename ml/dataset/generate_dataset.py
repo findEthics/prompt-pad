@@ -156,6 +156,18 @@ NEGATIVES = [
     "increase brightness", "turn off wifi", "what's the news",
 ]
 
+# These are deliberately incomplete command phrases. A small model otherwise
+# tends to invent the missing slot and trigger a real command.
+HARD_NEGATIVES = [
+    "wake", "wake me", "wake me up", "remind", "remind me",
+    "buy", "get", "add", "call", "ring", "dial", "text", "message",
+    "note", "alarm", "set an alarm", "timer", "set a timer", "event",
+    "calendar", "hermes", "todo", "grocery", "shopping", "schedule",
+    # Short fragments must remain app search, not model commands.
+    "sh", "ala", "cal", "rem", "tim", "gro", "tex", "not", "cam", "tor",
+    "pho", "sms", "eve", "war", "sho",
+]
+
 def fill(tmpl, **kw):
     return tmpl.format(**kw)
 
@@ -236,6 +248,10 @@ def build(rng):
     # negatives
     for neg in NEGATIVES:
         for _ in range(4): add(neg, {"command": "none"}, "none")
+    # Incomplete command phrases and short fragments are a separate cluster so
+    # the held-out split measures the model's ability to decline them.
+    for neg in HARD_NEGATIVES:
+        for _ in range(8): add(neg, {"command": "none"}, "hard_none")
 
     return rows
 

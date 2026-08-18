@@ -117,7 +117,9 @@ You are the command interpreter for a minimal Android launcher. Convert the user
 ---
 
 ## Invariants (do not break)
-1. LLM output is only ever a *suggestion*; the user still explicitly submits. No auto-call/send.
+1. Natural-language predictions auto-submit through the existing `CommandParser` and command execution
+   flow. External apps are only opened with prefilled data; the launcher never auto-calls, sends, or
+   inserts anything.
 2. The model never bypasses `CommandParser` validation.
 3. Base APK stays small: model is downloaded on demand, not bundled.
 4. Feature is opt-in (settings toggle), OFF until the model is present.

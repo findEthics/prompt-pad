@@ -1,0 +1,6 @@
+- phrases like "wake", "remind", "remind", "buy" etc are auto triggering without valid additional input (in these cases lacking a appropriate time or date or text item)
+- figure out if this is becuase of our auto execute logic or if the model is misclassifying these as commands; if the latter, we need to retrain the model to avoid this
+- input "sh" auto opens Google app; this is a false positive and should not be treated as a command
+- input "ala" auto opens calendar app; this is a false positive and should not be treated as a command
+- deduce if similar false positives are being triggered by the model and if so, we need to retrain the model to avoid this
+- carry out a second training of the model if needed
