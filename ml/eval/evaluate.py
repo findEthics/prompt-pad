@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Evaluate a fine-tuned CLauncher command model against the held-out split.
+Evaluate a fine-tuned Promptpad command model against the held-out split.
 
 Computes:
   - top-1 command accuracy (did it pick the right command?)
@@ -141,7 +141,7 @@ def main():
 
     cmd_acc = cmd_correct / n
     slot_acc = slot_correct / n
-    print(f"=== CLauncher command-model evaluation ({n} held-out) ===")
+    print(f"=== Promptpad command-model evaluation ({n} held-out) ===")
     print(f"JSON validity     : {json_valid/n:6.1%}")
     print(f"Command accuracy  : {cmd_acc:6.1%}   (gate {args.gate:.0%})")
     print(f"Full (cmd+slots)  : {slot_acc:6.1%}")

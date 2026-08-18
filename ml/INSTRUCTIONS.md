@@ -1,7 +1,7 @@
-# CLauncher LLM — OpenCode Execution Brief
+# Promptpad LLM — OpenCode Execution Brief
 
 **You (opencode) are running this on the M4 MacBook.** Hermes prepared the dataset, training script,
-and eval harness in this folder (`~/projects/clauncher-llm/` — copy/clone it to the Mac). Your job:
+and eval harness in this folder (`~/projects/prompt-pad-llm/` — copy/clone it to the Mac). Your job:
 train the model, validate it passes the gate, then integrate it into the app on a new branch.
 
 Do the phases in order. **Do not skip the eval gate.** If a phase fails, stop and report — do not
@@ -11,7 +11,7 @@ hand-wave past a failing metric.
 
 ## Goal
 
-Make the CLauncher search bar natural-language capable. A tiny on-device Gemma 3 270M model
+Make the Promptpad search bar natural-language capable. A tiny on-device Gemma 3 270M model
 translates free text ("set an alarm for 10pm", "buy milk", "text mom I'll be late") into the
 launcher's existing structured commands. The model ONLY produces a command intent; the existing
 `CommandParser` / `CommandIntentFactory` pipeline still validates and requires user confirmation
@@ -24,7 +24,7 @@ no fallbacks, ~125 MB INT4, downloaded on first enable (never bundled in the APK
 
 ## Repo facts (branch `physical-keyboard`)
 
-- Repo: `findEthics/cLauncher`, Java, package `me.pompel.elauncher`.
+- Repo: `findEthics/prompt-pad`, Java, package `me.pompel.elauncher`.
 - Command vocabulary lives in `CommandParser.Type` (enum). Today it has 12 commands.
 - **You will add a 13th command `grocery` (+ `groceries` list form)** — see `INTEGRATION_SPEC.md`.
 - Command list (canonical output tokens): call, text, hermes, timer, alarm, todo, todos,
@@ -109,7 +109,7 @@ Convert `export/merged/` to the MediaPipe `.task` (INT4) for Android. Follow Goo
 "convert a fine-tuned Gemma 270M for on-device" guide (AI Edge / MediaPipe). Notes:
 - Prefer the CPU backend for first-run validation — some `q4_block128 .task` GPU builds emit
   zero tokens silently (known LiteRT-LM issue). Verify CPU works, then try GPU.
-- Validate the `.task` loads and generates in the AI Edge Gallery app before wiring it into CLauncher.
+- Validate the `.task` loads and generates in the AI Edge Gallery app before wiring it into Promptpad.
 - Keep the file OUT of the APK. It is downloaded on first enable of the NL feature into the app
   files dir, checksum-verified.
 
@@ -134,7 +134,7 @@ Convert `export/merged/` to the MediaPipe `.task` (INT4) for Android. Follow Goo
 ## What Hermes did NOT do (so you know the boundary)
 
 - Did not train (no GPU on that host) — the trained model does not exist yet; you produce it.
-- Did not modify the `findEthics/cLauncher` repo or create the branch — you do that on the Mac.
+- Did not modify the `findEthics/prompt-pad` repo or create the branch — you do that on the Mac.
 - Did not write Java — the integration is specified in `INTEGRATION_SPEC.md` for you to implement,
   because you built the app and have the full repo + Android toolchain locally.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CLauncher NL->command dataset generator.
+Promptpad NL->command dataset generator.
 
 Produces natural-language -> structured-command JSON pairs for fine-tuning
 Gemma 3 270M so the launcher search bar becomes natural-language capable.

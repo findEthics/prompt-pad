@@ -1,10 +1,10 @@
-# On-Device LLM Command Layer for CLauncher (Titan) — Exploration & Plan
+# On-Device LLM Command Layer for Promptpad — Exploration & Plan
 
 > **Mode:** Plan + explore only. No implementation performed. Repo not modified.
 
-**Goal:** Add a tiny, fully on-device open-source LLM to the CLauncher app-drawer so that free-text search input (not just `!`-prefixed commands) can be interpreted into the launcher's *existing* safe command actions — mirroring the "Commands" feature from *Introducing Commands on Minimal Phone 2*.
+**Goal:** Add a tiny, fully on-device open-source LLM to the Promptpad app-drawer so that free-text search input (not just `!`-prefixed commands) can be interpreted into the launcher's *existing* safe command actions — mirroring the "Commands" feature from *Introducing Commands on Minimal Phone 2*.
 
-**Repo:** `findEthics/cLauncher` (branded "Titan"), Java, package `me.pompel.elauncher`. Based on NoLauncher / OLauncher lineage.
+**Repo:** `findEthics/prompt-pad` (branded "Promptpad"), Java, package `me.pompel.elauncher`. Based on NoLauncher / OLauncher lineage.
 
 ---
 
@@ -85,7 +85,7 @@ This is the key input for our use case. Google shipped **FunctionGemma-270M** sp
 - **Base FunctionGemma on Mobile Actions dataset: ~58%** (Google's own card). distil labs measured base multi-turn tool-calling at just **10–39%** — they bluntly call base FunctionGemma *"unusable for multi-turn tool calling."*
 - **After task-specific fine-tuning: 85%** (Google's "Mobile Actions Fine-Tune"), and distil labs reached **90–97%**, matching a 120B teacher model, still at ~288 MB quantized.
 
-**Implication for CLauncher:** 270M is the right *size and cost*, but shipping it **zero-shot / prompt-only will not be reliable enough** for command routing — expect it to misroute a meaningful fraction of utterances. The model becomes excellent **only after a small supervised fine-tune on our own command vocabulary.** This is affordable (2k examples, one short Colab run) and turns a coin-flip into 85–97% accuracy.
+**Implication for Promptpad:** 270M is the right *size and cost*, but shipping it **zero-shot / prompt-only will not be reliable enough** for command routing — expect it to misroute a meaningful fraction of utterances. The model becomes excellent **only after a small supervised fine-tune on our own command vocabulary.** This is affordable (2k examples, one short Colab run) and turns a coin-flip into 85–97% accuracy.
 
 ### How this refines our fit
 - ✅ Size, battery, RAM, speed: ideal for the €250 baseline (Section 2b/2c unchanged).
@@ -356,22 +356,22 @@ For each command, generate **many** paraphrase templates × realistic slot value
 - Retrieve the `findEthics` PAT from Bitwarden Secrets Manager (read-only):
   `~/.local/bin/bws secret list` → identify the findEthics GitHub PAT item → capture its value into a shell var only (never written to disk/config).
 - **Isolation rule (per memory):** the user's work GitHub was deliberately removed from this device; Hermes uses isolated creds. Do NOT `gh auth login` the findEthics account globally. Use the token inline in a scoped remote URL for this one repo only:
-  `https://<TOKEN>@github.com/findEthics/cLauncher.git`. Scrub the token from any command echo/history.
+  `https://<TOKEN>@github.com/findEthics/prompt-pad.git`. Scrub the token from any command echo/history.
 
 ### 12.2 Clone + branch
 ```
-git clone https://<TOKEN>@github.com/findEthics/cLauncher.git ~/projects/cLauncher
-cd ~/projects/cLauncher
+git clone https://<TOKEN>@github.com/findEthics/prompt-pad.git ~/projects/prompt-pad
+cd ~/projects/prompt-pad
 git checkout physical-keyboard
 git checkout -b physical-keyboard-LLM
 # reset origin URL to tokenless to avoid persisting the PAT in .git/config:
-git remote set-url origin https://github.com/findEthics/cLauncher.git
+git remote set-url origin https://github.com/findEthics/prompt-pad.git
 ```
 
 ### 12.3 Layout decision (confirmed): `ml/` folder INSIDE the repo
-Move the prepared setup from `~/projects/clauncher-llm/` into `~/projects/cLauncher/ml/`:
+Move the prepared setup from `~/projects/prompt-pad-llm/` into `~/projects/prompt-pad/ml/`:
 ```
-cLauncher/ml/
+prompt-pad/ml/
 ├── README.txt
 ├── INSTRUCTIONS.md
 ├── INTEGRATION_SPEC.md

@@ -10,7 +10,7 @@ import java.io.File;
 
 /** MediaPipe-backed natural-language command interpreter. */
 public final class MediaPipeLlmInterpreter implements LlmCommandInterpreter, AutoCloseable {
-    public static final String MODEL_FILE_NAME = "clauncher-gemma3-270m.task";
+    public static final String MODEL_FILE_NAME = "prompt-pad-gemma3-270m.task";
     private static final String TAG = "MediaPipeLlmInterpreter";
     // MediaPipe counts prompt and generated tokens together.
     private static final int MAX_TOKENS = 256;

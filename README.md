@@ -1,6 +1,6 @@
-# Titan
+# Promptpad
 
-Titan is a lightweight, minimal Android launcher with a sparse homescreen, fast app access, and a text-first command-search baseline.
+Promptpad is a lightweight, minimal Android launcher with a sparse homescreen, fast app access, and a text-first command-search baseline.
 
 The launcher is based on NoLauncher and inspired by [OLauncher Light](https://github.com/tanujnotes/Ultra/) and OLauncher.
 
@@ -16,9 +16,9 @@ The launcher is based on NoLauncher and inspired by [OLauncher Light](https://gi
 - Double tap to open the original launcher
 - Hold empty homescreen space to change the number of app fields
 
-## Titan command-search baseline
+## Promptpad command-search baseline
 
-Titan reserves an explicit command mode in the app-drawer search field. This section is the behavioral baseline for runtime implementation; machine-readable acceptance cases live in [`app/src/test/resources/me/pompel/elauncher/command-cases.tsv`](app/src/test/resources/me/pompel/elauncher/command-cases.tsv).
+Promptpad reserves an explicit command mode in the app-drawer search field. This section is the behavioral baseline for runtime implementation; machine-readable acceptance cases live in [`app/src/test/resources/me/pompel/elauncher/command-cases.tsv`](app/src/test/resources/me/pompel/elauncher/command-cases.tsv).
 
 ### Routing and interaction
 
@@ -62,7 +62,7 @@ Titan reserves an explicit command mode in the app-drawer search field. This sec
 
 ### Local list screens
 
-- `!notes` and `!todos` open separate View-based Activities and Back returns to Titan.
+- `!notes` and `!todos` open separate View-based Activities and Back returns to Promptpad.
 - Notes are shown newest first. To-dos show incomplete items first and support completion and deletion.
 - Notes and to-dos remain local to the device. V1 does not add sync, network access, aliases, macros, plugins, shell execution, or arbitrary intents.
 

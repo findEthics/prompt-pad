@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Titan is a lightweight Android launcher, forked from thypon/eLauncher, being extended with an explicit `!`-prefixed command-search mode (calling, texting, timers, notes, todos, calendar events, torch, camera) for a Unihertz Titan 2 physical-keyboard device. Package: `me.pompel.elauncher`. Single Gradle module (`app`), plain Java (no Kotlin), View-based UI (no Compose).
+Promptpad is a lightweight Android launcher, forked from thypon/eLauncher, being extended with an explicit `!`-prefixed command-search mode (calling, texting, timers, notes, todos, calendar events, torch, camera) for a Unihertz Titan 2 physical-keyboard device. Package: `me.pompel.elauncher`. Single Gradle module (`app`), plain Java (no Kotlin), View-based UI (no Compose).
 
 See `../PLAN.md` (repo root, one level up) for the full product spec, command contract, and phase history — read it before making behavioral changes to command routing/parsing. See `README.md` in this directory for the user-facing command-search contract (routing rule, per-command syntax/behavior, result states).
 
@@ -63,12 +63,12 @@ ml/.venv/bin/python -m litert_torch.generative.export_hf \
 mkdir -p ml/export/retrained-mediapipe/task-staging
 cp ml/export/retrained-mediapipe/tmp*/model_quantized.tflite \
   ml/export/retrained-mediapipe/task-staging/TF_LITE_PREFILL_DECODE
-unzip -p ml/export/clauncher-gemma3-270m.task TOKENIZER_MODEL \
+unzip -p ml/export/prompt-pad-gemma3-270m.task TOKENIZER_MODEL \
   > ml/export/retrained-mediapipe/task-staging/TOKENIZER_MODEL
-unzip -p ml/export/clauncher-gemma3-270m.task METADATA \
+unzip -p ml/export/prompt-pad-gemma3-270m.task METADATA \
   > ml/export/retrained-mediapipe/task-staging/METADATA
 (cd ml/export/retrained-mediapipe/task-staging && \
-  zip -0 -j ../clauncher-gemma3-270m.task \
+  zip -0 -j ../prompt-pad-gemma3-270m.task \
   TF_LITE_PREFILL_DECODE TOKENIZER_MODEL METADATA)
 ```
 
@@ -77,8 +77,8 @@ The task ZIP entry names are required exactly: `TF_LITE_PREFILL_DECODE`, `TOKENI
 ```bash
 ./gradlew testDebugUnitTest assembleDebug
 adb -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk
-adb -s emulator-5554 push ml/export/retrained-mediapipe/clauncher-gemma3-270m.task \
-  /sdcard/Android/data/me.pompel.elauncher/files/clauncher-gemma3-270m.task
+adb -s emulator-5554 push ml/export/retrained-mediapipe/prompt-pad-gemma3-270m.task \
+  /sdcard/Android/data/me.pompel.elauncher/files/prompt-pad-gemma3-270m.task
 ./gradlew connectedDebugAndroidTest
 ```
 

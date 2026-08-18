@@ -1,5 +1,5 @@
 <resources>
-    <string name="title_activity_settings">Titan Settings</string>
+    <string name="title_activity_settings">Promptpad Settings</string>
     <string name="drawer_empty">Type to summon apps</string>
     <string name="command_hint">! for commands</string>
     <string name="dark_mode_title">Dark Mode</string>

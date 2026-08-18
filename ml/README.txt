@@ -1,7 +1,7 @@
-CLauncher LLM — on-device natural-language command layer
+Promptpad LLM — on-device natural-language command layer
 ========================================================
 
-Make the CLauncher search bar natural-language capable with a tiny on-device
+Make the Promptpad search bar natural-language capable with a tiny on-device
 Gemma 3 270M model. See notes/PLAN.md for the full exploration + rationale.
 
 Layout

@@ -1,4 +1,4 @@
-# CLauncher — Integration Spec (branch `physical-keyboard-LLM`)
+# Promptpad — Integration Spec (branch `physical-keyboard-LLM`)
 
 For opencode. Implement on the M4 against the real repo. Two workstreams:
 **(A) new `grocery` command**, **(B) the on-device NL interpreter layer**. Preserve the existing
@@ -62,7 +62,7 @@ free text (no leading !)
 ### B2. `LlmCommandInterpreter` (new)
 - Wraps MediaPipe `LlmInference` (GenAI / LiteRT). Loads the `.task` from the app files dir.
 - Current development delivery is an adb-pushed file at
-  `getExternalFilesDir(null)/clauncher-gemma3-270m.task`; the feature stays disabled when it is
+  `getExternalFilesDir(null)/prompt-pad-gemma3-270m.task`; the feature stays disabled when it is
   absent. The production delivery task is deliberately deferred: host one versioned `.task` at a
   stable HTTPS URL, download it to a `.part` file with `HttpURLConnection` and HTTP Range resume,
   verify a pinned SHA-256 before an atomic rename, then load only the verified file. Add

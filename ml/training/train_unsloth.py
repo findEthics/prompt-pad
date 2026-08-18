@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fine-tune Gemma 3 270M on the CLauncher NL->command dataset with Unsloth Core.
+Fine-tune Gemma 3 270M on the Promptpad NL->command dataset with Unsloth Core.
 
 Runs on Apple Silicon (M4) per Unsloth docs: "Mac: Training, MLX and GGUF
 inference are ALL supported." Also runs on NVIDIA/Colab unchanged.

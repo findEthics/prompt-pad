@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Probe a local merged CLauncher model for command false positives."""
+"""Probe a local merged Promptpad model for command false positives."""
 import argparse
 import json
 import sys
