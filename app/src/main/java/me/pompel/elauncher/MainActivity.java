@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String HERMES_USERNAME_PREFERENCE = "hermes_username_preference";
     static final String HAS_KEYBOARD_PREFERENCE = "has_keyboard_preference";
     static final String NATURAL_LANGUAGE_PREFERENCE = "natural_language_commands_preference";
+    private static final String HOME_INSTRUCTIONS_DISMISSED_PREFERENCE = "home_instructions_dismissed";
     private static final String HERMES_SETTINGS_MESSAGE = "Set the Hermes Telegram bot in Settings.";
     private static final long NATURAL_LANGUAGE_DEBOUNCE_MILLIS = 350L;
     private ArrayList<App> appList;
@@ -175,6 +176,16 @@ public class MainActivity extends AppCompatActivity {
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
+
+        View homeInstructions = findViewById(R.id.home_instructions);
+        if (prefs.getBoolean(HOME_INSTRUCTIONS_DISMISSED_PREFERENCE, false)) {
+            homeInstructions.setVisibility(View.GONE);
+        } else {
+            findViewById(R.id.dismiss_instructions).setOnClickListener(view -> {
+                prefs.edit().putBoolean(HOME_INSTRUCTIONS_DISMISSED_PREFERENCE, true).apply();
+                homeInstructions.setVisibility(View.GONE);
+            });
+        }
 
         View mainLayout = findViewById(R.id.MainLayout);
         ViewCompat.setOnApplyWindowInsetsListener(mainLayout, (view, insets) -> {
