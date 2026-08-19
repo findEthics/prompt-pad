@@ -103,10 +103,6 @@ public final class CommandParser {
         return TELEGRAM_USERNAME_PATTERN.matcher(username).matches() ? username : null;
     }
 
-    public static boolean isValidTelegramUsername(String value) {
-        return normalizeTelegramUsername(value) != null;
-    }
-
     private ParseResult parseCall(String arguments) {
         if (arguments.length() == 0) {
             return missing("!call <contact-or-number>");
@@ -782,9 +778,6 @@ public final class CommandParser {
             return item;
         }
 
-        public String getText() {
-            return item;
-        }
     }
 
     public static final class EventCommand implements Command {

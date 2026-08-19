@@ -2,6 +2,7 @@ package me.pompel.elauncher;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -86,9 +87,9 @@ public class CommandParserTest {
     @Test
     public void normalizesTelegramBotUsernameForSettings() {
         assertEquals("hermes_bot", CommandParser.normalizeTelegramUsername(" @hermes_bot "));
-        assertTrue(CommandParser.isValidTelegramUsername("hermes_bot"));
-        assertFalse(CommandParser.isValidTelegramUsername("bad-name"));
-        assertFalse(CommandParser.isValidTelegramUsername("abcd"));
+        assertEquals("hermes_bot", CommandParser.normalizeTelegramUsername("hermes_bot"));
+        assertNull(CommandParser.normalizeTelegramUsername("bad-name"));
+        assertNull(CommandParser.normalizeTelegramUsername("abcd"));
     }
 
     @Test

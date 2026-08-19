@@ -108,7 +108,7 @@ All source is a flat package: `app/src/main/java/me/pompel/elauncher/`. There ar
 
 **App-search / home screen**: `MainActivity` is the `CATEGORY_HOME` launcher Activity and hosts both the sparse homescreen and the app-drawer search (fuzzy app matching via `recyclerAdapter`, unrelated to command mode). Gesture handling (swipe up/down, double-tap to previous launcher) lives here too.
 
-**Persistence**: `NotesRepository`/`TodosRepository` wrap `KeyValueStore` (`SharedPreferencesKeyValueStore` + `PersistentValueCodec`) — all local-only, no network/sync by design (V1 scope). `Note`/`Todo` are plain POJOs. `NotesActivity`/`TodosActivity` are the standalone list screens opened by `!notes`/`!todos`.
+**Persistence**: `LocalListRepository` wraps `KeyValueStore` (`SharedPreferencesKeyValueStore` + `PersistentValueCodec`) for notes, to-dos, and groceries — all local-only, no network/sync by design (V1 scope). `LocalListItem` is the shared immutable record. `LocalListActivity` owns the shared screen shell; the three named list Activities select their list kind for Android component and Recents compatibility.
 
 **Testing pattern**: `CommandContractFixtureTest` is data-driven off `app/src/test/resources/me/pompel/elauncher/command-cases.tsv` — this TSV is the source of truth for routing/parsing contract cases and should be updated alongside any change to command syntax or validation behavior, in lockstep with the README command-contract table and `PLAN.md`. `TimeSource` is an injected time abstraction used to keep timer/note/todo timestamp logic testable. `InMemoryKeyValueStore` is the test double for persistence tests.
 

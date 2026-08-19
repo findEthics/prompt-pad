@@ -66,9 +66,9 @@ public class MainActivity extends AppCompatActivity {
     private CommandAdapter commandAdapter;
     private ContactsResolver contactsResolver;
     private TorchController torchController;
-    private NotesRepository notesRepository;
-    private TodosRepository todosRepository;
-    private GroceryRepository groceryRepository;
+    private LocalListRepository notesRepository;
+    private LocalListRepository todosRepository;
+    private LocalListRepository groceryRepository;
     private CommandParser commandParser;
     private String pendingPermissionCommand;
     private long searchRevision;
@@ -200,9 +200,12 @@ public class MainActivity extends AppCompatActivity {
         contactsResolver = new ContactsResolver(this);
         torchController = new TorchController(this);
         SharedPreferences commandPreferences = getSharedPreferences("command_data", MODE_PRIVATE);
-        notesRepository = new NotesRepository(new SharedPreferencesKeyValueStore(commandPreferences));
-        todosRepository = new TodosRepository(new SharedPreferencesKeyValueStore(commandPreferences));
-        groceryRepository = new GroceryRepository(new SharedPreferencesKeyValueStore(commandPreferences));
+        notesRepository = new LocalListRepository(new SharedPreferencesKeyValueStore(commandPreferences),
+                LocalListKind.NOTES);
+        todosRepository = new LocalListRepository(new SharedPreferencesKeyValueStore(commandPreferences),
+                LocalListKind.TODOS);
+        groceryRepository = new LocalListRepository(new SharedPreferencesKeyValueStore(commandPreferences),
+                LocalListKind.GROCERIES);
         commandParser = new CommandParser(contactsResolver);
         naturalLanguageInterpreter = new MediaPipeLlmInterpreter(this);
 

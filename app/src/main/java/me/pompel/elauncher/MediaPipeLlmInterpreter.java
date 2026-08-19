@@ -9,7 +9,7 @@ import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession;
 import java.io.File;
 
 /** MediaPipe-backed natural-language command interpreter. */
-public final class MediaPipeLlmInterpreter implements LlmCommandInterpreter, AutoCloseable {
+public final class MediaPipeLlmInterpreter implements AutoCloseable {
     public static final String MODEL_FILE_NAME = "prompt-pad-gemma3-270m.task";
     private static final String TAG = "MediaPipeLlmInterpreter";
     // MediaPipe counts prompt and generated tokens together.
@@ -38,7 +38,6 @@ public final class MediaPipeLlmInterpreter implements LlmCommandInterpreter, Aut
         return isModelPresent(context);
     }
 
-    @Override
     public synchronized String interpret(String text) {
         if (text == null || text.trim().isEmpty() || !isModelPresent(context)) {
             return null;

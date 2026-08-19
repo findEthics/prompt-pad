@@ -40,6 +40,8 @@ Promptpad reserves an explicit command mode in the app-drawer search field. This
 | Alarm | `!alarm H:MM` | Set a system alarm silently and show confirmation |
 | To-do | `!todo <text>` | Save a local incomplete to-do |
 | To-dos | `!todos` | Open the local to-do Activity |
+| Grocery | `!grocery <item>` | Save a local incomplete grocery item |
+| Groceries | `!groceries` | Open the local grocery Activity |
 | Note | `!note <text>` | Save a timestamped local note |
 | Notes | `!notes` | Open the local notes Activity |
 | Event | `!event <date> <time> <title>` | Open a prefilled Calendar event; never insert it directly |
@@ -62,8 +64,9 @@ Promptpad reserves an explicit command mode in the app-drawer search field. This
 
 ### Local list screens
 
-- `!notes` and `!todos` open separate View-based Activities and Back returns to Promptpad.
+- `!notes`, `!todos`, and `!groceries` open local View-based list Activities and Back returns to Promptpad.
 - Notes are shown newest first. To-dos show incomplete items first and support completion and deletion.
+- Groceries show incomplete items first and support completion and deletion.
 - Notes and to-dos remain local to the device. V1 does not add sync, network access, aliases, macros, plugins, shell execution, or arbitrary intents.
 
 ## Download

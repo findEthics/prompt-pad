@@ -65,20 +65,20 @@ public class CommandIntentFactoryInstrumentedTest {
         preferences.edit().clear().commit();
         SharedPreferencesKeyValueStore store = new SharedPreferencesKeyValueStore(preferences);
 
-        NotesRepository notes = new NotesRepository(store);
-        TodosRepository todos = new TodosRepository(store);
-        Note first = notes.add("First note");
-        Note second = notes.add("Second note");
-        Todo todo = todos.add("Buy batteries");
+        LocalListRepository notes = new LocalListRepository(store, LocalListKind.NOTES);
+        LocalListRepository todos = new LocalListRepository(store, LocalListKind.TODOS);
+        LocalListItem first = notes.add("First note");
+        LocalListItem second = notes.add("Second note");
+        LocalListItem todo = todos.add("Buy batteries");
 
-        List<Note> restoredNotes = new NotesRepository(store).list();
-        List<Todo> restoredTodos = new TodosRepository(store).list();
+        List<LocalListItem> restoredNotes = new LocalListRepository(store, LocalListKind.NOTES).list();
+        List<LocalListItem> restoredTodos = new LocalListRepository(store, LocalListKind.TODOS).list();
         assertEquals(second, restoredNotes.get(0));
         assertEquals(first, restoredNotes.get(1));
         assertFalse(restoredTodos.get(0).isCompleted());
 
-        new TodosRepository(store).toggleCompletion(todo.getId());
-        assertTrue(new TodosRepository(store).list().get(0).isCompleted());
+        new LocalListRepository(store, LocalListKind.TODOS).toggleCompletion(todo.getId());
+        assertTrue(new LocalListRepository(store, LocalListKind.TODOS).list().get(0).isCompleted());
     }
 
     private static final class FixedClock implements CommandParser.Clock {

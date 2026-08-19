@@ -22,7 +22,7 @@ import re
 from pathlib import Path
 
 # ----------------------------------------------------------------------------
-# System prompt (kept identical to what LlmOutputMapper will send at runtime).
+# System prompt embedded in exported task metadata and used by the runtime template.
 # ----------------------------------------------------------------------------
 SYSTEM_PROMPT = (
     "You are the command interpreter for a minimal Android launcher. "

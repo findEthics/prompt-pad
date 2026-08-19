@@ -121,10 +121,11 @@ public class MediaPipeLlmInterpreterInstrumentedTest {
     }
 
     private static void assertGrocerySaved(Context context, String item) {
-        GroceryRepository repository = new GroceryRepository(new SharedPreferencesKeyValueStore(
-                context.getSharedPreferences("command_data", Context.MODE_PRIVATE)));
-        for (GroceryItem grocery : repository.list()) {
-            if (item.equals(grocery.getItem())) {
+        LocalListRepository repository = new LocalListRepository(new SharedPreferencesKeyValueStore(
+                context.getSharedPreferences("command_data", Context.MODE_PRIVATE)),
+                LocalListKind.GROCERIES);
+        for (LocalListItem grocery : repository.list()) {
+            if (item.equals(grocery.getText())) {
                 repository.delete(grocery.getId());
                 return;
             }

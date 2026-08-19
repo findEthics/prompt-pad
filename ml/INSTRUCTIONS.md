@@ -66,7 +66,7 @@ cd dataset && python3 generate_dataset.py --out-dir . --seed 42
 
 The generator is the place to add more natural-language paraphrases. Add templates to the
 `*_T` banks and slot values to the pools, then regenerate. Keep the SYSTEM_PROMPT identical to
-what the app sends at runtime (see INTEGRATION_SPEC.md — they must match exactly).
+the prompt embedded in exported task metadata (see INTEGRATION_SPEC.md).
 
 ---
 

@@ -86,6 +86,7 @@ public class MainActivityInputInstrumentedTest {
             assertDarkTheme(MainActivity.class);
             assertDarkTheme(NotesActivity.class);
             assertDarkTheme(TodosActivity.class);
+            assertDarkTheme(GroceryActivity.class);
             assertDarkTheme(SettingsActivity.class);
         } finally {
             SharedPreferences.Editor editor = preferences.edit();
@@ -165,9 +166,9 @@ public class MainActivityInputInstrumentedTest {
 
     private static void assertTodoSaved(String text) {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        TodosRepository repository = new TodosRepository(new SharedPreferencesKeyValueStore(
-                context.getSharedPreferences("command_data", Context.MODE_PRIVATE)));
-        for (Todo todo : repository.list()) {
+        LocalListRepository repository = new LocalListRepository(new SharedPreferencesKeyValueStore(
+                context.getSharedPreferences("command_data", Context.MODE_PRIVATE)), LocalListKind.TODOS);
+        for (LocalListItem todo : repository.list()) {
             if (text.equals(todo.getText())) {
                 repository.delete(todo.getId());
                 return;
