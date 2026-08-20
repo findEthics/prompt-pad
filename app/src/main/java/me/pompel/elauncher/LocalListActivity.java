@@ -186,13 +186,16 @@ public class LocalListActivity extends AppCompatActivity {
 
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("Edit item")
-                .setView(input)
+                .setView(input, dp(20), 0, dp(20), 0)
                 .setNegativeButton(android.R.string.cancel, null)
                 .setNeutralButton("Delete", null)
                 .setPositiveButton("Save", null)
                 .create();
         dialog.setOnShowListener(ignored -> {
             styleBottomDialog(dialog);
+            input.requestFocus();
+            input.post(() -> WindowCompat.getInsetsController(dialog.getWindow(), input)
+                    .show(WindowInsetsCompat.Type.ime()));
             dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(view -> {
                 dialog.dismiss();
                 confirmDelete(item);
