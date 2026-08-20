@@ -69,6 +69,22 @@ public final class LocalListRepository {
         return false;
     }
 
+    public boolean updateText(String id, String text) {
+        if (id == null || text == null || text.trim().isEmpty()) {
+            return false;
+        }
+        List<LocalListItem> items = load();
+        for (int index = 0; index < items.size(); index++) {
+            LocalListItem item = items.get(index);
+            if (id.equals(item.getId())) {
+                items.set(index, item.withText(RepositorySupport.normalizeText(text)));
+                save(items);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean delete(String id) {
         if (id == null) {
             return false;

@@ -71,6 +71,38 @@ public class LocalListRepositoryTest {
     }
 
     @Test
+    public void updatesTextPreservingStateAndPersistingAcrossRecreation() {
+        InMemoryKeyValueStore store = new InMemoryKeyValueStore();
+        LocalListRepository repository = repository(store, LocalListKind.TODOS, new MutableClock(100L));
+        LocalListItem original = repository.add("old text");
+        assertTrue(repository.toggleCompletion(original.getId()));
+
+        assertTrue(repository.updateText(original.getId(), "  new text  "));
+        LocalListItem expected = original.withText("new text").withCompleted(true);
+        assertEquals(Collections.singletonList(expected), repository.list());
+
+        LocalListRepository recreated = repository(store, LocalListKind.TODOS, new MutableClock(200L));
+        assertEquals(Collections.singletonList(expected), recreated.list());
+        assertFalse(recreated.updateText(original.getId(), "   "));
+        assertFalse(recreated.updateText("missing", "new text"));
+        assertFalse(recreated.updateText(null, "new text"));
+    }
+
+    @Test
+    public void notesCanBeEditedWithoutChangingTimestamp() {
+        InMemoryKeyValueStore store = new InMemoryKeyValueStore();
+        LocalListRepository repository = repository(store, LocalListKind.NOTES, new MutableClock(100L));
+        LocalListItem original = repository.add("old note");
+
+        assertTrue(repository.updateText(original.getId(), "  updated note  "));
+        LocalListItem updated = original.withText("updated note");
+        assertEquals(Collections.singletonList(updated), repository.list());
+
+        LocalListRepository recreated = repository(store, LocalListKind.NOTES, new MutableClock(200L));
+        assertEquals(Collections.singletonList(updated), recreated.list());
+    }
+
+    @Test
     public void preservesLegacyKeysAndRowShapes() {
         InMemoryKeyValueStore store = new InMemoryKeyValueStore();
         store.putString(LocalListKind.NOTES.key, PersistentValueCodec.encode(Collections.singletonList(

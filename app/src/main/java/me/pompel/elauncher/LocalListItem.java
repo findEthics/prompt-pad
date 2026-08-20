@@ -37,6 +37,10 @@ public final class LocalListItem {
         return new LocalListItem(id, text, createdAtMillis, completed);
     }
 
+    public LocalListItem withText(String text) {
+        return new LocalListItem(id, text, createdAtMillis, completed);
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) {

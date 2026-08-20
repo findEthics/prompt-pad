@@ -9,7 +9,7 @@ The launcher is based on NoLauncher and inspired by [OLauncher Light](https://gi
 - Sparse homescreen and app drawer
 - Fuzzy app search
 - Bottom search bar in app drawer
-- Swipe up or type on the physical keyboard from the homescreen to open the app drawer
+- Swipe up or type on the physical keyboard from the homescreen to open the app drawer while Promptpad is foreground
 - Long press a homescreen app field to assign or rename an app
 - Automatically launch the single matching app result
 - Swipe down for notifications
@@ -22,11 +22,12 @@ Promptpad reserves an explicit command mode in the app-drawer search field. This
 
 ### Routing and interaction
 
+- While Promptpad owns HOME, printable hardware-keyboard input opens the Promptpad app drawer and seeds its search field. This capture is app-local; it does not intercept keys from other apps or use an accessibility service.
 - Command mode is selected only when the first input character is `!`: `query.isNotEmpty() && query.charAt(0) == '!'`.
 - Empty input and every non-`!` first character, including whitespace before `!`, use the existing fuzzy app search.
 - `!` shows command help and suggestions. Unknown commands show an error and help; they never fall back to app search.
 - Removing the leading `!` restores app-search rows without stale command rows.
-- Typing only updates help, suggestions, previews, or validation messages. Enter or tapping a valid command row explicitly submits it.
+- Typing a `!` command only updates help, suggestions, previews, or validation messages. Enter or tapping a valid command row explicitly submits it.
 - Command mode never uses automatic single-app launch behavior.
 
 ### Commands
@@ -40,6 +41,7 @@ Promptpad reserves an explicit command mode in the app-drawer search field. This
 | Alarm | `!alarm H:MM` | Set a system alarm silently and show confirmation |
 | To-do | `!todo <text>` | Save a local incomplete to-do |
 | To-dos | `!todos` | Open the local to-do Activity |
+| Buy | `!buy <item>` | Save a local incomplete grocery item |
 | Grocery | `!grocery <item>` | Save a local incomplete grocery item |
 | Groceries | `!groceries` | Open the local grocery Activity |
 | Note | `!note <text>` | Save a timestamped local note |
@@ -51,6 +53,7 @@ Promptpad reserves an explicit command mode in the app-drawer search field. This
 ### Parsing and result states
 
 - Command names are case-insensitive. The leading `!` selects command mode and is not passed to handlers.
+- `!buy <item>` is equivalent to `!grocery <item>`; the LLM mapper continues to emit `!grocery`.
 - Timer durations are non-zero contiguous combinations of hours, minutes, and seconds in that order, such as `30s`, `1m15s`, `3m20s`, `10m`, `1h`, and `1h30m`.
 - Alarm times use 24-hour `H:mm` or `HH:mm` format and set the alarm silently.
 - Event dates are `today`, `tomorrow`, or `YYYY-MM-DD`; times use 24-hour `HH:mm`. Events use local time, a 30-minute default duration, and reject past start times.
@@ -65,8 +68,9 @@ Promptpad reserves an explicit command mode in the app-drawer search field. This
 ### Local list screens
 
 - `!notes`, `!todos`, and `!groceries` open local View-based list Activities and Back returns to Promptpad.
-- Notes are shown newest first. To-dos show incomplete items first and support completion and deletion.
-- Groceries show incomplete items first and support completion and deletion.
+- Notes are shown newest first. Tap an item to edit it or delete it through the edit dialog.
+- To-dos show incomplete items first. Tap the text to edit or delete through the edit dialog; tap the checkbox to mark complete or incomplete.
+- Groceries show incomplete items first and use the same edit, delete, and completion behavior.
 - Notes and to-dos remain local to the device. V1 does not add sync, network access, aliases, macros, plugins, shell execution, or arbitrary intents.
 
 ## Download

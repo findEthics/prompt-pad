@@ -1,13 +1,19 @@
 package me.pompel.elauncher;
 
 import android.os.Bundle;
+import android.text.InputType;
+import android.view.Gravity;
 import android.view.View;
-import android.widget.AdapterView;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
+import android.view.Window;
+import android.view.WindowManager;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,7 +24,9 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
 
 /** Shared UI for the local notes, to-do, and grocery lists. */
 public class LocalListActivity extends AppCompatActivity {
@@ -26,6 +34,23 @@ public class LocalListActivity extends AppCompatActivity {
     private LocalListRepository repository;
     private ListView listView;
     private List<LocalListItem> items;
+    private TextView actionPill;
+    private final DateFormat noteDateFormat = new SimpleDateFormat("dd MMM, HH:mm", Locale.US);
+    private final Runnable hideActionPill = () -> {
+        if (actionPill == null) {
+            return;
+        }
+        actionPill.animate()
+                .translationY(dp(16))
+                .alpha(0f)
+                .setDuration(220)
+                .setInterpolator(new android.view.animation.AccelerateInterpolator())
+                .withEndAction(() -> {
+                    actionPill.setVisibility(View.GONE);
+                    actionPill.setTranslationY(0f);
+                })
+                .start();
+    };
 
     protected LocalListActivity(LocalListKind kind) {
         if (kind == null) {
@@ -49,22 +74,22 @@ public class LocalListActivity extends AppCompatActivity {
         root.addView(empty, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         listView.setEmptyView(empty);
-        if (kind.checklist) {
-            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    repository.toggleCompletion(items.get(position).getId());
-                    refresh();
-                }
-            });
-        }
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                confirmDelete(items.get(position));
-                return true;
-            }
-        });
+        actionPill = new TextView(this);
+        actionPill.setBackgroundResource(R.drawable.save_pill_background);
+        actionPill.setGravity(Gravity.CENTER);
+        actionPill.setMinHeight(dp(48));
+        actionPill.setPadding(dp(24), dp(10), dp(24), dp(10));
+        actionPill.setTypeface(ResourcesCompat.getFont(this, R.font.poppins));
+        actionPill.setTextColor(ResourcesCompat.getColor(getResources(),
+                ThemePreference.isDarkMode(this) ? R.color.on_surface_dark : R.color.on_surface_light,
+                getTheme()));
+        actionPill.setTextSize(16);
+        actionPill.setVisibility(View.GONE);
+        FrameLayout.LayoutParams pillParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        pillParams.setMargins(dp(20), 0, dp(20), dp(62));
+        root.addView(actionPill, pillParams);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(root);
         ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
@@ -92,35 +117,147 @@ public class LocalListActivity extends AppCompatActivity {
     }
 
     private void refresh() {
+        refresh(false);
+    }
+
+    private void refresh(boolean animate) {
         items = repository.list();
         listView.setAdapter(new ArrayAdapter<LocalListItem>(this,
                 android.R.layout.simple_list_item_1, items) {
             @Override
             public View getView(int position, View convertView, android.view.ViewGroup parent) {
-                TextView row = (TextView) super.getView(position, convertView, parent);
                 LocalListItem item = getItem(position);
                 if (kind.checklist) {
-                    row.setText((item.isCompleted() ? "[x] " : "[ ] ") + item.getText());
-                } else {
-                    row.setText(item.getText() + "\n" + DateFormat.getDateTimeInstance().format(
-                            item.getCreatedAtMillis()));
+                    LinearLayout row = new LinearLayout(LocalListActivity.this);
+                    row.setOrientation(LinearLayout.HORIZONTAL);
+                    row.setGravity(Gravity.CENTER_VERTICAL);
+                    row.setPadding(32, 24, 32, 24);
+
+                    CheckBox checkbox = new CheckBox(LocalListActivity.this);
+                    checkbox.setContentDescription("Mark " + item.getText() + " complete");
+                    checkbox.setChecked(item.isCompleted());
+                    checkbox.setOnCheckedChangeListener((buttonView, checked) -> {
+                        if (checked != item.isCompleted()) {
+                            repository.toggleCompletion(item.getId());
+                            refresh(true);
+                        }
+                    });
+                    row.addView(checkbox, new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT));
+
+                    TextView label = new TextView(LocalListActivity.this);
+                    label.setText(item.getText());
+                    label.setTypeface(ResourcesCompat.getFont(LocalListActivity.this, R.font.poppins));
+                    label.setOnClickListener(view -> editItem(item));
+                    LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(
+                            0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+                    labelParams.setMargins(16, 0, 0, 0);
+                    row.addView(label, labelParams);
+
+                    row.setOnClickListener(view -> editItem(item));
+                    return row;
                 }
+                TextView row = (TextView) super.getView(position, convertView, parent);
+                row.setText(item.getText() + "\n" + noteDateFormat.format(item.getCreatedAtMillis()));
                 row.setPadding(32, 24, 32, 24);
                 row.setTypeface(ResourcesCompat.getFont(LocalListActivity.this, R.font.poppins));
+                row.setOnClickListener(view -> editItem(item));
                 return row;
             }
         });
+        if (animate) {
+            listView.animate().cancel();
+            listView.setAlpha(0.85f);
+            listView.animate()
+                    .alpha(1f)
+                    .setDuration(160)
+                    .setInterpolator(new DecelerateInterpolator())
+                    .start();
+        }
+    }
+
+    private void editItem(final LocalListItem item) {
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        input.setText(item.getText());
+        input.setSelection(input.length());
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Edit item")
+                .setView(input)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setNeutralButton("Delete", null)
+                .setPositiveButton("Save", null)
+                .create();
+        dialog.setOnShowListener(ignored -> {
+            styleBottomDialog(dialog);
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(view -> {
+                dialog.dismiss();
+                confirmDelete(item);
+            });
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+                if (input.getText().toString().trim().isEmpty()) {
+                    input.setError("Enter an item");
+                    return;
+                }
+                if (repository.updateText(item.getId(), input.getText().toString())) {
+                    dialog.dismiss();
+                    refresh(true);
+                }
+            });
+        });
+        dialog.show();
     }
 
     private void confirmDelete(final LocalListItem item) {
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setMessage(kind.deleteMessage)
                 .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton("Delete", (dialog, which) -> {
-                    repository.delete(item.getId());
-                    Toast.makeText(this, kind.deleteToast, Toast.LENGTH_SHORT).show();
-                    refresh();
+                .setPositiveButton("Delete", (ignored, which) -> {
+                    if (repository.delete(item.getId())) {
+                        showActionPill(kind.deleteToast);
+                        refresh(true);
+                    }
                 })
-                .show();
+                .create();
+        dialog.setOnShowListener(ignored -> styleBottomDialog(dialog));
+        dialog.show();
+    }
+
+    private void styleBottomDialog(AlertDialog dialog) {
+        Window window = dialog.getWindow();
+        if (window == null) {
+            return;
+        }
+        window.setBackgroundDrawable(getResources().getDrawable(
+                R.drawable.save_pill_background, getTheme()));
+        WindowManager.LayoutParams attributes = window.getAttributes();
+        attributes.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+        attributes.y = dp(24);
+        window.setAttributes(attributes);
+        window.setLayout(getResources().getDisplayMetrics().widthPixels - dp(40),
+                WindowManager.LayoutParams.WRAP_CONTENT);
+    }
+
+    private void showActionPill(String message) {
+        actionPill.removeCallbacks(hideActionPill);
+        actionPill.animate().cancel();
+        actionPill.setText(message);
+        actionPill.setVisibility(View.VISIBLE);
+        actionPill.setTranslationY(dp(16));
+        actionPill.setAlpha(0f);
+        actionPill.animate()
+                .translationY(0f)
+                .alpha(1f)
+                .setDuration(220)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+        actionPill.postDelayed(hideActionPill, 1200);
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 }
