@@ -53,7 +53,7 @@ Promptpad reserves an explicit command mode in the app-drawer search field. This
 ### Parsing and result states
 
 - Command names are case-insensitive. The leading `!` selects command mode and is not passed to handlers.
-- `!buy <item>` is equivalent to `!grocery <item>`; the LLM mapper continues to emit `!grocery`.
+- `!buy <item>` is equivalent to `!grocery <item>`.
 - Timer durations are non-zero contiguous combinations of hours, minutes, and seconds in that order, such as `30s`, `1m15s`, `3m20s`, `10m`, `1h`, and `1h30m`.
 - Alarm times use 24-hour `H:mm` or `HH:mm` format and set the alarm silently.
 - Event dates are `today`, `tomorrow`, or `YYYY-MM-DD`; times use 24-hour `HH:mm`. Events use local time, a 30-minute default duration, and reject past start times.
