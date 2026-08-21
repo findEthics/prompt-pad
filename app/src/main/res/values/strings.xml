@@ -1,9 +1,14 @@
 <resources>
-    <string name="title_activity_settings">Titan Settings</string>
-    <string name="number_of_apps_summary">shown in the main launcher</string>
-    <string name="number_of_apps_title">Number of Apps</string>
+    <string name="title_activity_settings">Promptpad Settings</string>
+    <string name="drawer_empty">Type to summon apps</string>
+    <string name="home_drawer_empty">Type or swipe up to summon apps</string>
+    <string name="command_hint">! for commands</string>
+    <string name="settings_hint">Touch and hold to open settings</string>
+    <string name="dismiss_instructions">Dismiss instructions</string>
     <string name="dark_mode_title">Dark Mode</string>
     <string name="dark_mode_summary">Enable or disable dark mode</string>
+    <string name="has_keyboard_title">Physical keyboard</string>
+    <string name="has_keyboard_summary">Open Promptpad search when typing from the home screen</string>
     <string name="hermes_username_title">Hermes Telegram Bot</string>
     <string name="hermes_username_summary">Username used by !hermes</string>
 </resources>

@@ -28,6 +28,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
+
 @RunWith(AndroidJUnit4.class)
 public class MainActivityInputInstrumentedTest {
     @Test
@@ -84,6 +86,7 @@ public class MainActivityInputInstrumentedTest {
             assertDarkTheme(MainActivity.class);
             assertDarkTheme(NotesActivity.class);
             assertDarkTheme(TodosActivity.class);
+            assertDarkTheme(GroceryActivity.class);
             assertDarkTheme(SettingsActivity.class);
         } finally {
             SharedPreferences.Editor editor = preferences.edit();
@@ -112,6 +115,33 @@ public class MainActivityInputInstrumentedTest {
         }
     }
 
+    @Test
+    public void appSearchRequiresContiguousCaseInsensitiveMatch() {
+        ArrayList<App> apps = new ArrayList<>();
+        apps.add(new App("Calendar", "com.google.android.calendar"));
+        final boolean[] clicked = {false};
+        recyclerAdapter adapter = new recyclerAdapter(apps, new recyclerAdapter.RecyclerViewClickListener() {
+            @Override
+            public void onClick(App app) {
+                clicked[0] = true;
+            }
+
+            @Override
+            public void onLongClick(App app) {
+            }
+        });
+
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> adapter.filter("alar"));
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+        assertEquals(0, adapter.getItemCount());
+        assertTrue(!clicked[0]);
+
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> adapter.filter("ALE"));
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+        assertEquals(1, adapter.getItemCount());
+        assertTrue(!clicked[0]);
+    }
+
     private static void assertCommandSubmitted(String command, int keyCode) {
         MainActivity activity = startActivity();
         try {
@@ -136,9 +166,9 @@ public class MainActivityInputInstrumentedTest {
 
     private static void assertTodoSaved(String text) {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        TodosRepository repository = new TodosRepository(new SharedPreferencesKeyValueStore(
-                context.getSharedPreferences("command_data", Context.MODE_PRIVATE)));
-        for (Todo todo : repository.list()) {
+        LocalListRepository repository = new LocalListRepository(new SharedPreferencesKeyValueStore(
+                context.getSharedPreferences("command_data", Context.MODE_PRIVATE)), LocalListKind.TODOS);
+        for (LocalListItem todo : repository.list()) {
             if (text.equals(todo.getText())) {
                 repository.delete(todo.getId());
                 return;

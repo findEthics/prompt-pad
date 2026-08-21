@@ -14,3 +14,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Local credentials and environment overrides
+.env
+.env.*

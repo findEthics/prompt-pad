@@ -7,8 +7,6 @@
         <item name="colorAccent">@color/command_accent</item>
         <item name="colorControlNormal">@color/outline_light</item>
         <item name="android:colorBackground">@color/surface_light</item>
-        <item name="fontFamily">@font/poppins</item>
-        <item name="android:fontFamily">@font/poppins</item>
     </style>
 
     <style name="AppTheme.InvertedDark" parent="Theme.AppCompat.NoActionBar">
@@ -17,7 +15,10 @@
         <item name="colorAccent">@color/command_accent</item>
         <item name="colorControlNormal">@color/outline_dark</item>
         <item name="android:colorBackground">@color/surface_dark</item>
-        <item name="fontFamily">@font/poppins</item>
-        <item name="android:fontFamily">@font/poppins</item>
+    </style>
+
+    <style name="BottomDialogAnimation">
+        <item name="android:windowEnterAnimation">@anim/bottom_dialog_enter</item>
+        <item name="android:windowExitAnimation">@anim/bottom_dialog_exit</item>
     </style>
 </resources>

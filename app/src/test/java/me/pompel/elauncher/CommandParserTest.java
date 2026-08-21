@@ -2,6 +2,7 @@ package me.pompel.elauncher;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -16,11 +17,12 @@ public class CommandParserTest {
     public void parsesEverySupportedArgumentFreeCommand() {
         CommandParser parser = parserAt("2026-08-15 10:00");
 
-        assertCommand(parser.parse("!help"), CommandParser.Type.HELP,
-                CommandParser.ZeroPayloadCommand.class);
+        assertError(parser.parse("!help"), CommandParser.ErrorCode.UNKNOWN_COMMAND);
         assertCommand(parser.parse("!todos"), CommandParser.Type.TODOS,
                 CommandParser.ZeroPayloadCommand.class);
         assertCommand(parser.parse("!notes"), CommandParser.Type.NOTES,
+                CommandParser.ZeroPayloadCommand.class);
+        assertCommand(parser.parse("!groceries"), CommandParser.Type.GROCERIES,
                 CommandParser.ZeroPayloadCommand.class);
         assertCommand(parser.parse("!t"), CommandParser.Type.TORCH,
                 CommandParser.ZeroPayloadCommand.class);
@@ -38,11 +40,21 @@ public class CommandParserTest {
                 .getCommand();
         CommandParser.TodoCommand todo = (CommandParser.TodoCommand) parser.parse("!todo Buy batteries")
                 .getCommand();
+        CommandParser.GroceryCommand grocery = (CommandParser.GroceryCommand) parser
+                .parse("!grocery Milk").getCommand();
+        CommandParser.GroceryCommand buy = (CommandParser.GroceryCommand) parser
+                .parse("!buy Milk").getCommand();
 
         assertEquals("Meter reading 42", note.getText());
         assertEquals("Buy batteries", todo.getText());
+        assertEquals("Milk", grocery.getItem());
+        assertEquals(CommandParser.Type.GROCERY, grocery.getType());
+        assertEquals("Milk", buy.getItem());
+        assertEquals(CommandParser.Type.BUY, buy.getType());
         assertError(parser.parse("!note"), CommandParser.ErrorCode.MISSING_ARGUMENT);
         assertError(parser.parse("!todo"), CommandParser.ErrorCode.MISSING_ARGUMENT);
+        assertError(parser.parse("!grocery"), CommandParser.ErrorCode.MISSING_ARGUMENT);
+        assertError(parser.parse("!buy"), CommandParser.ErrorCode.MISSING_ARGUMENT);
         assertError(parser.parse("!unknown"), CommandParser.ErrorCode.UNKNOWN_COMMAND);
         assertError(parser.parse("calendar"), CommandParser.ErrorCode.NOT_A_COMMAND);
     }
@@ -81,9 +93,9 @@ public class CommandParserTest {
     @Test
     public void normalizesTelegramBotUsernameForSettings() {
         assertEquals("hermes_bot", CommandParser.normalizeTelegramUsername(" @hermes_bot "));
-        assertTrue(CommandParser.isValidTelegramUsername("hermes_bot"));
-        assertFalse(CommandParser.isValidTelegramUsername("bad-name"));
-        assertFalse(CommandParser.isValidTelegramUsername("abcd"));
+        assertEquals("hermes_bot", CommandParser.normalizeTelegramUsername("hermes_bot"));
+        assertNull(CommandParser.normalizeTelegramUsername("bad-name"));
+        assertNull(CommandParser.normalizeTelegramUsername("abcd"));
     }
 
     @Test
@@ -149,20 +161,23 @@ public class CommandParserTest {
     }
 
     @Test
-    public void parsesStrictTwentyFourHourAlarms() {
+    public void parsesFlexibleTwentyFourHourAlarms() {
         CommandParser parser = parserAt("2026-08-15 10:00");
 
         CommandParser.AlarmCommand midnight = (CommandParser.AlarmCommand) parser
                 .parse("!alarm 00:00").getCommand();
+        CommandParser.AlarmCommand singleDigitHour = (CommandParser.AlarmCommand) parser
+                .parse("!alarm 7:05").getCommand();
         CommandParser.AlarmCommand lastMinute = (CommandParser.AlarmCommand) parser
                 .parse("!alarm 23:59").getCommand();
 
         assertEquals(0, midnight.getHour());
         assertEquals(0, midnight.getMinute());
+        assertEquals(7, singleDigitHour.getHour());
+        assertEquals(5, singleDigitHour.getMinute());
         assertEquals(23, lastMinute.getHour());
         assertEquals(59, lastMinute.getMinute());
         assertError(parser.parse("!alarm"), CommandParser.ErrorCode.MISSING_ARGUMENT);
-        assertError(parser.parse("!alarm 7:05"), CommandParser.ErrorCode.INVALID_TIME);
         assertError(parser.parse("!alarm 24:00"), CommandParser.ErrorCode.INVALID_TIME);
         assertError(parser.parse("!alarm 07:05 label"), CommandParser.ErrorCode.UNEXPECTED_ARGUMENT);
     }

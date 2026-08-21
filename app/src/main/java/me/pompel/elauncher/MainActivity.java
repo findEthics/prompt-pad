@@ -4,7 +4,6 @@ import androidx.annotation.NonNull;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
-import androidx.core.content.res.ResourcesCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -21,27 +20,24 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
-import android.content.res.TypedArray;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.Editable;
-import android.text.SpannableString;
 import android.text.TextWatcher;
 import android.transition.Fade;
 import android.transition.Transition;
 import android.transition.TransitionManager;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.inputmethod.EditorInfo;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.KeyEvent;
 import android.view.inputmethod.InputMethodManager;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,12 +46,14 @@ import java.util.Collections;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String NUMBER_OF_APPS = "number_of_apps_preference";
     private static final String HERMES_USERNAME_PREFERENCE = "hermes_username_preference";
+    static final String HAS_KEYBOARD_PREFERENCE = "has_keyboard_preference";
+    private static final String HOME_INSTRUCTIONS_DISMISSED_PREFERENCE = "home_instructions_dismissed";
     private static final String HERMES_SETTINGS_MESSAGE = "Set the Hermes Telegram bot in Settings.";
     private ArrayList<App> appList;
-    private ArrayList<SpannableString> appNames;
     private EditText search;
+    private View drawerEmpty;
+    private TextView savePill;
     private SharedPreferences prefs;
 
     private recyclerAdapter adapter;
@@ -63,12 +61,27 @@ public class MainActivity extends AppCompatActivity {
     private CommandAdapter commandAdapter;
     private ContactsResolver contactsResolver;
     private TorchController torchController;
-    private NotesRepository notesRepository;
-    private TodosRepository todosRepository;
+    private LocalListRepository notesRepository;
+    private LocalListRepository todosRepository;
+    private LocalListRepository groceryRepository;
     private CommandParser commandParser;
     private String pendingPermissionCommand;
     private long searchRevision;
     private boolean commandEnterDown;
+
+    private final Runnable hideSavePill = () -> {
+        savePill.animate()
+                .translationY(dp(16))
+                .alpha(0f)
+                .setDuration(220)
+                .setInterpolator(new AccelerateInterpolator())
+                .withEndAction(() -> {
+                    savePill.setVisibility(View.GONE);
+                    savePill.setTranslationY(0f);
+                    changeLayout(true, true);
+                })
+                .start();
+    };
 
     private static final int CONTACTS_PERMISSION_REQUEST = 1001;
     private static final int CAMERA_PERMISSION_REQUEST = 1002;
@@ -81,9 +94,6 @@ public class MainActivity extends AppCompatActivity {
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         for (ResolveInfo info : packageManager.queryIntentActivities(intent, 0)) appList.add(new App(info.loadLabel(packageManager).toString(), info.activityInfo.packageName));
         Collections.sort(appList, (app1, app2) -> app1.appName.toString().compareToIgnoreCase(app2.appName.toString()));
-        for (App app : appList) {
-            appNames.add(app.appName);
-        }
     }
 
     long keyboardActionTime = 0;
@@ -100,20 +110,29 @@ public class MainActivity extends AppCompatActivity {
             inputManager.hideSoftInputFromWindow(search.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         } else {
             search.requestFocus();
-            if (!hasHardwareKeyboard()) {
+            if (!hasKeyboard()) {
                 inputManager.showSoftInput(search, InputMethodManager.SHOW_IMPLICIT);
             }
         }
     }
 
-    private boolean hasHardwareKeyboard() {
-        Configuration configuration = getResources().getConfiguration();
+    private boolean hasKeyboard() {
+        return prefs.contains(HAS_KEYBOARD_PREFERENCE)
+                ? prefs.getBoolean(HAS_KEYBOARD_PREFERENCE, false)
+                : hasHardwareKeyboard(this);
+    }
+
+    static boolean hasHardwareKeyboard(Context context) {
+        Configuration configuration = context.getResources().getConfiguration();
         return configuration.keyboard != Configuration.KEYBOARD_NOKEYS
                 && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
     }
 
     private void changeLayout(boolean home, boolean animated) {
-        if (!home) loadApps();
+        if (!home) {
+            loadApps();
+            resetDrawerToIdle();
+        }
         if (animated) {
             Transition transition = new Fade();
             transition.setDuration(300);
@@ -147,6 +166,16 @@ public class MainActivity extends AppCompatActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_main);
 
+        View homeInstructions = findViewById(R.id.home_instructions);
+        if (prefs.getBoolean(HOME_INSTRUCTIONS_DISMISSED_PREFERENCE, false)) {
+            homeInstructions.setVisibility(View.GONE);
+        } else {
+            findViewById(R.id.dismiss_instructions).setOnClickListener(view -> {
+                prefs.edit().putBoolean(HOME_INSTRUCTIONS_DISMISSED_PREFERENCE, true).apply();
+                homeInstructions.setVisibility(View.GONE);
+            });
+        }
+
         View mainLayout = findViewById(R.id.MainLayout);
         ViewCompat.setOnApplyWindowInsetsListener(mainLayout, (view, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
@@ -164,16 +193,20 @@ public class MainActivity extends AppCompatActivity {
         });
 
         appList = new ArrayList<>();
-        appNames = new ArrayList<>();
         loadApps();
         search = findViewById(R.id.search);
+        drawerEmpty = findViewById(R.id.drawer_empty);
+        savePill = findViewById(R.id.save_pill);
         contactsResolver = new ContactsResolver(this);
         torchController = new TorchController(this);
         SharedPreferences commandPreferences = getSharedPreferences("command_data", MODE_PRIVATE);
-        notesRepository = new NotesRepository(new SharedPreferencesKeyValueStore(commandPreferences));
-        todosRepository = new TodosRepository(new SharedPreferencesKeyValueStore(commandPreferences));
+        notesRepository = new LocalListRepository(new SharedPreferencesKeyValueStore(commandPreferences),
+                LocalListKind.NOTES);
+        todosRepository = new LocalListRepository(new SharedPreferencesKeyValueStore(commandPreferences),
+                LocalListKind.TODOS);
+        groceryRepository = new LocalListRepository(new SharedPreferencesKeyValueStore(commandPreferences),
+                LocalListKind.GROCERIES);
         commandParser = new CommandParser(contactsResolver);
-
         recyclerView = findViewById(R.id.recycler_view);
         adapter = new recyclerAdapter(appList, new recyclerAdapter.RecyclerViewClickListener() {
             @Override
@@ -187,6 +220,7 @@ public class MainActivity extends AppCompatActivity {
                 intent.setData(Uri.parse("package:" + app.packageId));
                 openAppWithIntent(intent, false);
             }
+
         });
         commandAdapter = new CommandAdapter(new CommandAdapter.Listener() {
             @Override
@@ -270,9 +304,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 searchRevision++;
+                drawerEmpty.setVisibility(charSequence.length() == 0 ? View.VISIBLE : View.GONE);
                 CommandAdapter.styleCommandToken(MainActivity.this, search.getText());
                 CommandQueryClassifier.Result result = CommandQueryClassifier.classify(charSequence.toString());
-                if (result.getMode() == CommandQueryClassifier.Mode.COMMAND_SEARCH) {
+                if (result.getDisplayState() != CommandQueryClassifier.DisplayState.APP_RESULTS) {
                     // Keep delayed app-filter results from auto-launching while commands are shown.
                     adapter.pauseFiltering();
                     if (recyclerView.getAdapter() != commandAdapter) {
@@ -291,58 +326,28 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        LinearLayout homescreen = findViewById(R.id.HomeScreen);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        new SwipeListener(findViewById(R.id.HomeScreen));
 
-        CharSequence[] alertApps = appNames.toArray(new CharSequence[0]);
-        int i = 0;
-        for (i = 0; i < prefs.getInt(NUMBER_OF_APPS, 4); i++) {
-            TextView textView = new TextView(this);
-            textView.setTextColor(getColorFromAttr(androidx.appcompat.R.attr.colorPrimary));
-            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 32);
-            textView.setTypeface(ResourcesCompat.getFont(this, R.font.poppins));
-            textView.setPadding(0, 0, 0, 50);
-            textView.setText(prefs.getString(Integer.toString(i), "App"));
-            textView.setTag(i);
-            textView.setLayoutParams(params);
-            textView.setOnLongClickListener(v -> {
-                loadApps();
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setTitle("Select app");
-                builder.setItems(alertApps, (dialog, which) -> {
-                    AlertDialog.Builder builder1 = new AlertDialog.Builder(MainActivity.this);
-                    builder1.setTitle("Set app name");
-                    final EditText input = new EditText(MainActivity.this);
-                    input.setText(appNames.get(which));
-                    builder1.setView(input);
-                    input.setTag(appList.get(which).packageId);
-                    builder1.setPositiveButton("Add", (dialog1, which1) -> {
-                        String name = input.getText().toString();
-                        textView.setText(name);
-                        SharedPreferences.Editor editor = prefs.edit();
-                        editor.putString(String.valueOf(textView.getTag()), name);
-                        editor.putString("p" + textView.getTag(), String.valueOf(input.getTag()));
-                        editor.apply();
-                    });
-                    builder1.create();
-                    builder1.show();
-                });
-                builder.create();
-                builder.show();
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (findViewById(R.id.HomeScreen).getVisibility() == View.VISIBLE && hasKeyboard()) {
+            int unicode = event.getUnicodeChar(event.getMetaState());
+            if (Character.isValidCodePoint(unicode) && !Character.isISOControl(unicode)) {
+                changeLayout(false, false);
+                search.setText(new String(Character.toChars(unicode)));
+                search.setSelection(search.length());
                 return true;
-            });
-            textView.setOnClickListener(v -> openAppWithIntent(getPackageManager().getLaunchIntentForPackage(prefs.getString("p" + textView.getTag(), "")), true));
-            homescreen.addView(textView);
+            }
         }
-
-        new SwipeListener(homescreen);
-
+        return super.onKeyDown(keyCode, event);
     }
 
     private void submitCommand() {
         String query = search.getText().toString();
-        if (CommandQueryClassifier.classify(query).getMode()
-                != CommandQueryClassifier.Mode.COMMAND_SEARCH) {
+        if (CommandQueryClassifier.classify(query).getDisplayState()
+                == CommandQueryClassifier.DisplayState.APP_RESULTS) {
             return;
         }
 
@@ -365,17 +370,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean submitCommandIfApplicable() {
-        if (search.getText().length() == 0 || search.getText().charAt(0) != '!') {
-            return false;
+        String query = search.getText().toString();
+        if (query.length() > 0 && query.charAt(0) == '!') {
+            submitCommand();
+            return true;
         }
-        submitCommand();
-        return true;
+        return false;
     }
 
     private boolean showContactPreview(String query, CommandQueryClassifier.Result result) {
         if (result.getDisplayState() != CommandQueryClassifier.DisplayState.PREVIEW
-                || (result.getCommand() != CommandQueryClassifier.Command.CALL
-                && result.getCommand() != CommandQueryClassifier.Command.TEXT)) {
+                || (result.getCommand() != CommandParser.Type.CALL
+                && result.getCommand() != CommandParser.Type.TEXT)) {
             return false;
         }
         CommandParser.ParseResult parsed = commandParser.parse(query);
@@ -414,7 +420,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean showHermesUsernameHint(CommandQueryClassifier.Result result) {
         if (result.getDisplayState() != CommandQueryClassifier.DisplayState.PREVIEW
-                || result.getCommand() != CommandQueryClassifier.Command.HERMES
+                || result.getCommand() != CommandParser.Type.HERMES
                 || hermesUsername() != null) {
             return false;
         }
@@ -453,12 +459,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void executeCommand(CommandParser.Command command, String query) {
         switch (command.getType()) {
-            case HELP:
-                if (recyclerView.getAdapter() != commandAdapter) {
-                    recyclerView.setAdapter(commandAdapter);
-                }
-                commandAdapter.submit(CommandQueryClassifier.classify("!"));
-                return;
             case CALL:
                 executeCall((CommandParser.CallCommand) command, query);
                 return;
@@ -473,45 +473,58 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 launchCommandIntent(CommandIntentFactory.openTelegram(username, hermes.getMessage()),
-                        "Telegram is not available.", "Hermes draft opened.");
+                        "Telegram is not available.");
                 return;
             case TIMER:
                 CommandParser.TimerCommand timer = (CommandParser.TimerCommand) command;
                 launchCommandIntent(CommandIntentFactory.setTimer(timer.getDurationSeconds(), timer.getLabel()),
-                        "No Clock app is available.", "Timer form opened.");
+                        "No Clock app is available.");
                 return;
             case ALARM:
                 CommandParser.AlarmCommand alarm = (CommandParser.AlarmCommand) command;
-                launchCommandIntent(CommandIntentFactory.setAlarm(alarm.getHour(), alarm.getMinute()),
-                        "No Clock app is available.", "Alarm form opened.");
+                try {
+                    startActivity(CommandIntentFactory.setAlarm(alarm.getHour(), alarm.getMinute()));
+                    showSavedPill("alarm set");
+                } catch (ActivityNotFoundException | SecurityException exception) {
+                    Log.w(MainActivity.class.getSimpleName(), "Unable to set alarm", exception);
+                    showSavedPill("try again");
+                }
                 return;
             case TODO:
-                Todo todo = todosRepository.add(((CommandParser.TodoCommand) command).getText());
-                showCommandStatus("To-do saved", todo.getText());
+                todosRepository.add(((CommandParser.TodoCommand) command).getText());
+                showSavedPill("✅ added to todos");
                 return;
             case TODOS:
                 launchCommandIntent(new Intent(this, TodosActivity.class),
-                        "The to-do list is unavailable.", "Opening to-dos.");
+                        "The to-do list is unavailable.");
+                return;
+            case BUY:
+            case GROCERY:
+                groceryRepository.add(((CommandParser.GroceryCommand) command).getItem());
+                showSavedPill("🥦 added to grocery list");
+                return;
+            case GROCERIES:
+                launchCommandIntent(new Intent(this, GroceryActivity.class),
+                        "The grocery list is unavailable.");
                 return;
             case NOTE:
-                Note note = notesRepository.add(((CommandParser.NoteCommand) command).getText());
-                showCommandStatus("Note saved", note.getText());
+                notesRepository.add(((CommandParser.NoteCommand) command).getText());
+                showSavedPill("📒 added to notes");
                 return;
             case NOTES:
                 launchCommandIntent(new Intent(this, NotesActivity.class),
-                        "The notes list is unavailable.", "Opening notes.");
+                        "The notes list is unavailable.");
                 return;
             case EVENT:
                 CommandParser.EventCommand event = (CommandParser.EventCommand) command;
-                launchCommandIntent(CommandIntentFactory.insertEvent(event), "No Calendar app is available.",
-                        "Calendar event form opened.");
+                launchCommandIntent(CommandIntentFactory.insertEvent(event), "No Calendar app is available.");
                 return;
             case TORCH:
                 toggleTorch(query, searchRevision);
                 return;
             case CAMERA:
                 launchCommandIntent(CommandIntentFactory.camera(),
-                        "No camera app is available.", "Camera opened.");
+                        "No camera app is available.");
                 return;
         }
     }
@@ -521,7 +534,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void open(String number) {
                 launchCommandIntent(CommandIntentFactory.dial(number),
-                        "No dialer is available.", "Dialer opened with " + number + ".");
+                        "No dialer is available.");
             }
         });
     }
@@ -531,8 +544,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void open(String number) {
                 launchCommandIntent(CommandIntentFactory.composeText(number, command.getMessage()),
-                        "No SMS app is available.",
-                        "SMS composer opened for " + number + ".");
+                        "No SMS app is available.");
             }
         });
     }
@@ -598,10 +610,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void launchCommandIntent(Intent intent, String unavailableMessage, String confirmationMessage) {
+    private void launchCommandIntent(Intent intent, String unavailableMessage) {
         try {
             startActivity(intent);
-            showCommandStatus("Ready", confirmationMessage);
+            resetDrawerToIdle();
         } catch (ActivityNotFoundException | SecurityException exception) {
             Log.w(MainActivity.class.getSimpleName(), "Unable to launch command intent", exception);
             showCommandStatus("Unavailable", unavailableMessage);
@@ -610,21 +622,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void requestContactsFor(String query) {
         pendingPermissionCommand = query;
-        requestPermission(Manifest.permission.READ_CONTACTS, CONTACTS_PERMISSION_REQUEST,
-                "Contacts permission is required for named recipients.");
+        requestPermission(Manifest.permission.READ_CONTACTS, CONTACTS_PERMISSION_REQUEST);
     }
 
     private void requestCameraForTorch(String query) {
         pendingPermissionCommand = query;
-        requestPermission(Manifest.permission.CAMERA, CAMERA_PERMISSION_REQUEST,
-                "Camera permission is required for torch.");
+        requestPermission(Manifest.permission.CAMERA, CAMERA_PERMISSION_REQUEST);
     }
 
-    private void requestPermission(String permission, int requestCode, String denialMessage) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            showPermissionSettings(denialMessage);
-            return;
-        }
+    private void requestPermission(String permission, int requestCode) {
         if (checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED) {
             submitPendingPermissionCommand();
             return;
@@ -670,6 +676,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showCommandStatus(String title, String detail) {
+        drawerEmpty.setVisibility(View.GONE);
         adapter.pauseFiltering();
         if (recyclerView.getAdapter() != commandAdapter) {
             recyclerView.setAdapter(commandAdapter);
@@ -677,12 +684,45 @@ public class MainActivity extends AppCompatActivity {
         commandAdapter.showStatus(title, detail);
     }
 
+    private void showSavedPill(String message) {
+        savePill.removeCallbacks(hideSavePill);
+        savePill.animate().cancel();
+        findViewById(R.id.AppDrawer).setVisibility(View.GONE);
+        savePill.setText(message);
+        savePill.setVisibility(View.VISIBLE);
+        savePill.setTranslationY(dp(16));
+        savePill.setAlpha(0f);
+        savePill.animate()
+                .translationY(0f)
+                .alpha(1f)
+                .setDuration(220)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+        savePill.postDelayed(hideSavePill, 1200);
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
     private void showCommandPermissionStatus(String title, String detail) {
+        drawerEmpty.setVisibility(View.GONE);
         adapter.pauseFiltering();
         if (recyclerView.getAdapter() != commandAdapter) {
             recyclerView.setAdapter(commandAdapter);
         }
         commandAdapter.showPermissionStatus(title, detail);
+    }
+
+    private void resetDrawerToIdle() {
+        if (search.length() != 0) {
+            search.setText("");
+        }
+        drawerEmpty.setVisibility(View.VISIBLE);
+        if (recyclerView.getAdapter() != adapter) {
+            recyclerView.setAdapter(adapter);
+        }
+        adapter.filter("");
     }
 
     private void openAppSettings(String fallbackMessage) {
@@ -778,12 +818,4 @@ public class MainActivity extends AppCompatActivity {
         @Override public boolean onTouch (View view, MotionEvent motionEvent) { view.performClick(); return gestureDetector.onTouchEvent(motionEvent); }
     }
 
-    private int getColorFromAttr(int attr) {
-        TypedValue typedValue = new TypedValue();
-        int color;
-        try (TypedArray a = obtainStyledAttributes(typedValue.data, new int[]{attr})) {
-            color = a.getColor(0, 0);
-        }
-        return color;
-    }
 }

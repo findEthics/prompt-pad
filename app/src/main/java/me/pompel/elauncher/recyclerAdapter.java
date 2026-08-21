@@ -14,9 +14,11 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 
 public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppViewHolder> implements Filterable {
+    private static final int MIN_AUTO_LAUNCH_QUERY_LENGTH = 4;
     private final ArrayList<App> appList;
     private ArrayList<App> appListFiltered;
     private final RecyclerViewClickListener listener;
@@ -25,7 +27,7 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
 
     public recyclerAdapter(ArrayList<App> appList, RecyclerViewClickListener listener) {
         this.appList = appList;
-        this.appListFiltered = appList;
+        this.appListFiltered = new ArrayList<>();
         this.listener = listener;
     }
 
@@ -39,26 +41,22 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
         filteringEnabled = false;
     }
 
-    private static boolean fuzzyContains(String str, String query) {
-        int strIndex = 0;
-        for (char c : query.toCharArray()) {
-            strIndex = str.indexOf(c, strIndex);
-            if (strIndex == -1) return false;
-        }
-        return true;
-    }
-
     @Override
     public Filter getFilter() {
         return new Filter() {
             @Override
             protected FilterResults performFiltering(CharSequence charSequence) {
-                String str = charSequence.toString().toLowerCase();
+                String query = charSequence.toString().toLowerCase(Locale.ROOT);
                 FilterResults results = new FilterResults();
                 List<App> filteredApps = new ArrayList<>();
 
-                if (str.isEmpty()) filteredApps = appList;
-                else for (App app : appList) if (fuzzyContains(app.appName.toString().toLowerCase(), str)) filteredApps.add(app);
+                if (!query.isEmpty()) {
+                    for (App app : appList) {
+                        if (app.appName.toString().toLowerCase(Locale.ROOT).contains(query)) {
+                            filteredApps.add(app);
+                        }
+                    }
+                }
 
                 results.count = filteredApps.size();
                 results.values = filteredApps;
@@ -72,27 +70,27 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
                 appListFiltered = (ArrayList<App>)filterResults.values;
 
                 for (App app : appListFiltered) {
-                    String appName = app.appName.toString().toLowerCase();
-                    String query = charSequence.toString().toLowerCase();
-                    int queryIndex = 0;
-                    for (int appNameIndex = 0;
-                            appNameIndex < appName.length() && queryIndex < query.length();
-                            appNameIndex++) {
-                        if (appName.charAt(appNameIndex) == query.charAt(queryIndex)) {
-                            app.appName.setSpan(new UnderlineSpan(), appNameIndex, appNameIndex + 1,
-                                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                            queryIndex++;
-                        }
+                    String appName = app.appName.toString();
+                    String normalizedAppName = appName.toLowerCase(Locale.ROOT);
+                    String query = charSequence.toString().toLowerCase(Locale.ROOT);
+                    int queryIndex = normalizedAppName.indexOf(query);
+                    if (queryIndex >= 0 && !query.isEmpty()) {
+                        app.appName.setSpan(new UnderlineSpan(), queryIndex,
+                                queryIndex + query.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
 
                     // if an exact match, exit and click on it
-                    if (app.appName.length() == charSequence.length() && queryIndex == query.length()) {
+                    if (normalizedAppName.equals(query)
+                            && charSequence.toString().trim().length() >= MIN_AUTO_LAUNCH_QUERY_LENGTH) {
                         listener.onClick(app);
                         break;
                     }
                 }
 
-                if (appListFiltered.size() == 1) listener.onClick(appListFiltered.get(0));
+                if (appListFiltered.size() == 1
+                        && charSequence.toString().trim().length() >= MIN_AUTO_LAUNCH_QUERY_LENGTH) {
+                    listener.onClick(appListFiltered.get(0));
+                }
                 notifyDataSetChanged();
             }
         };
@@ -144,5 +142,6 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
     public interface RecyclerViewClickListener {
         void onClick(App app);
         void onLongClick(App app);
+
     }
 }

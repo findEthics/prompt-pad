@@ -1,13 +1,6 @@
 package me.pompel.elauncher;
 
 final class RepositorySupport {
-    static final TimeSource SYSTEM_TIME = new TimeSource() {
-        @Override
-        public long currentTimeMillis() {
-            return System.currentTimeMillis();
-        }
-    };
-
     private RepositorySupport() {
     }
 
