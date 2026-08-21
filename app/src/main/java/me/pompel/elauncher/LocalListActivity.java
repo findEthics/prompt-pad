@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -127,12 +128,12 @@ public class LocalListActivity extends AppCompatActivity {
             @Override
             public View getView(int position, View convertView, android.view.ViewGroup parent) {
                 LocalListItem item = getItem(position);
-                if (kind.checklist) {
-                    LinearLayout row = new LinearLayout(LocalListActivity.this);
-                    row.setOrientation(LinearLayout.HORIZONTAL);
-                    row.setGravity(Gravity.CENTER_VERTICAL);
-                    row.setPadding(32, 24, 32, 24);
+                LinearLayout row = new LinearLayout(LocalListActivity.this);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setGravity(Gravity.CENTER_VERTICAL);
+                row.setPadding(32, 24, 32, 24);
 
+                if (kind.checklist) {
                     CheckBox checkbox = new CheckBox(LocalListActivity.this);
                     checkbox.setContentDescription("Mark " + item.getText() + " complete");
                     checkbox.setChecked(item.isCompleted());
@@ -146,22 +147,23 @@ public class LocalListActivity extends AppCompatActivity {
                             LinearLayout.LayoutParams.WRAP_CONTENT,
                             LinearLayout.LayoutParams.WRAP_CONTENT));
 
-                    TextView label = new TextView(LocalListActivity.this);
-                    label.setText(item.getText());
-                    label.setTypeface(ResourcesCompat.getFont(LocalListActivity.this, R.font.poppins));
-                    label.setOnClickListener(view -> editItem(item));
-                    LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(
-                            0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-                    labelParams.setMargins(16, 0, 0, 0);
-                    row.addView(label, labelParams);
-
-                    row.setOnClickListener(view -> editItem(item));
-                    return row;
                 }
-                TextView row = (TextView) super.getView(position, convertView, parent);
-                row.setText(item.getText() + "\n" + noteDateFormat.format(item.getCreatedAtMillis()));
-                row.setPadding(32, 24, 32, 24);
-                row.setTypeface(ResourcesCompat.getFont(LocalListActivity.this, R.font.poppins));
+
+                TextView label = new TextView(LocalListActivity.this);
+                label.setText(kind.checklist
+                        ? item.getText()
+                        : item.getText() + "\n" + noteDateFormat.format(item.getCreatedAtMillis()));
+                label.setTypeface(ResourcesCompat.getFont(LocalListActivity.this, R.font.poppins));
+                label.setOnClickListener(view -> editItem(item));
+                LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(
+                        0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+                if (kind.checklist) {
+                    labelParams.setMargins(16, 0, 0, 0);
+                }
+                row.addView(label, labelParams);
+                row.addView(deleteButton(item), new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
                 row.setOnClickListener(view -> editItem(item));
                 return row;
             }
@@ -188,7 +190,6 @@ public class LocalListActivity extends AppCompatActivity {
                 .setTitle("Edit item")
                 .setView(input, dp(20), 0, dp(20), 0)
                 .setNegativeButton(android.R.string.cancel, null)
-                .setNeutralButton("Delete", null)
                 .setPositiveButton("Save", null)
                 .create();
         dialog.setOnShowListener(ignored -> {
@@ -196,10 +197,6 @@ public class LocalListActivity extends AppCompatActivity {
             input.requestFocus();
             input.post(() -> WindowCompat.getInsetsController(dialog.getWindow(), input)
                     .show(WindowInsetsCompat.Type.ime()));
-            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(view -> {
-                dialog.dismiss();
-                confirmDelete(item);
-            });
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
                 if (input.getText().toString().trim().isEmpty()) {
                     input.setError("Enter an item");
@@ -214,19 +211,17 @@ public class LocalListActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    private void confirmDelete(final LocalListItem item) {
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setMessage(kind.deleteMessage)
-                .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton("Delete", (ignored, which) -> {
-                    if (repository.delete(item.getId())) {
-                        showActionPill(kind.deleteToast);
-                        refresh(true);
-                    }
-                })
-                .create();
-        dialog.setOnShowListener(ignored -> styleBottomDialog(dialog));
-        dialog.show();
+    private ImageButton deleteButton(final LocalListItem item) {
+        ImageButton button = new ImageButton(this);
+        button.setImageResource(android.R.drawable.ic_menu_delete);
+        button.setContentDescription("Delete " + item.getText());
+        button.setOnClickListener(view -> {
+            if (repository.delete(item.getId())) {
+                showActionPill(kind.deleteToast);
+                refresh(true);
+            }
+        });
+        return button;
     }
 
     private void styleBottomDialog(AlertDialog dialog) {
