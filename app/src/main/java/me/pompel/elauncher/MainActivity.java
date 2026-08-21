@@ -107,6 +107,9 @@ public class MainActivity extends AppCompatActivity {
         InputMethodManager inputManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (hide) {
             search.clearFocus();
+            View homeScreen = findViewById(R.id.HomeScreen);
+            homeScreen.setFocusableInTouchMode(true);
+            homeScreen.requestFocus();
             inputManager.hideSoftInputFromWindow(search.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
         } else {
             search.requestFocus();
@@ -331,8 +334,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (findViewById(R.id.HomeScreen).getVisibility() == View.VISIBLE && hasKeyboard()) {
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN
+                && findViewById(R.id.HomeScreen).getVisibility() == View.VISIBLE && hasKeyboard()) {
             int unicode = event.getUnicodeChar(event.getMetaState());
             if (Character.isValidCodePoint(unicode) && !Character.isISOControl(unicode)) {
                 changeLayout(false, false);
@@ -341,7 +345,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         }
-        return super.onKeyDown(keyCode, event);
+        return super.dispatchKeyEvent(event);
     }
 
     private void submitCommand() {
