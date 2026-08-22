@@ -24,7 +24,9 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
+        android:icon="@drawable/ic_launcher_promptpad"
         android:label="Promptpad"
+        android:roundIcon="@drawable/ic_launcher_promptpad"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:targetApi="tiramisu">

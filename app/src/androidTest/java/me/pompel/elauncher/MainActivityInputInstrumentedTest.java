@@ -11,14 +11,20 @@ import android.content.SharedPreferences;
 import android.app.Activity;
 import android.graphics.Typeface;
 import android.os.Process;
+import android.os.SystemClock;
+import android.os.UserHandle;
+import android.os.UserManager;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
+import android.text.style.UnderlineSpan;
 import android.util.TypedValue;
 import android.view.KeyEvent;
+import android.view.ContextThemeWrapper;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -28,6 +34,7 @@ import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.junit.Test;
+import org.junit.Assume;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
@@ -135,14 +142,68 @@ public class MainActivityInputInstrumentedTest {
         });
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> adapter.filter("alar"));
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
-        assertEquals(0, adapter.getItemCount());
+        waitForItemCount(adapter, 0);
         assertTrue(!clicked[0]);
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> adapter.filter("ALE"));
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
-        assertEquals(1, adapter.getItemCount());
+        waitForItemCount(adapter, 1);
         assertTrue(!clicked[0]);
+    }
+
+    @Test
+    public void workProfileLabelIsBadgedWithoutChangingSearchName() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        UserManager userManager = (UserManager) context.getSystemService(Context.USER_SERVICE);
+        UserHandle badgedUser = null;
+        String expectedLabel = null;
+        for (UserHandle user : userManager.getUserProfiles()) {
+            String label = context.getPackageManager().getUserBadgedLabel("Calendar", user).toString();
+            if (!"Calendar".equals(label)) {
+                badgedUser = user;
+                expectedLabel = label;
+                break;
+            }
+        }
+        Assume.assumeTrue("No badged profile is available", badgedUser != null);
+
+        ArrayList<App> apps = new ArrayList<>();
+        App app = new App("Calendar", new ComponentName("com.google.android.calendar",
+                "com.google.android.calendar.CalendarActivity"), badgedUser);
+        apps.add(app);
+        recyclerAdapter adapter = new recyclerAdapter(apps, new recyclerAdapter.RecyclerViewClickListener() {
+            @Override
+            public void onClick(App app) {
+            }
+
+            @Override
+            public void onLongClick(App app) {
+            }
+        });
+
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> adapter.filter("calendar"));
+        waitForItemCount(adapter, 1);
+
+        final TextView[] title = {null};
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            FrameLayout parent = new FrameLayout(new ContextThemeWrapper(context, R.style.AppTheme));
+            recyclerAdapter.AppViewHolder holder = adapter.onCreateViewHolder(parent, 0);
+            adapter.onBindViewHolder(holder, 0);
+            title[0] = holder.itemView.findViewById(R.id.app_name);
+        });
+        assertEquals("Calendar", app.appName.toString());
+        assertEquals(expectedLabel, title[0].getText().toString());
+        Spanned styledLabel = (Spanned) title[0].getText();
+        int expectedUnderlineStart = expectedLabel.toLowerCase().indexOf("calendar");
+        assertEquals(expectedUnderlineStart, styledLabel.getSpanStart(
+                styledLabel.getSpans(0, styledLabel.length(), UnderlineSpan.class)[0]));
+    }
+
+    private static void waitForItemCount(recyclerAdapter adapter, int expected) {
+        for (int attempt = 0; attempt < 20 && adapter.getItemCount() != expected; attempt++) {
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            SystemClock.sleep(50);
+        }
+        assertEquals(expected, adapter.getItemCount());
     }
 
     private static void assertCommandSubmitted(String command, int keyCode) {

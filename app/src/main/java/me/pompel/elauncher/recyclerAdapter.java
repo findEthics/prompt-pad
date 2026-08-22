@@ -124,14 +124,17 @@ public class recyclerAdapter extends RecyclerView.Adapter<recyclerAdapter.AppVie
 
     @Override
     public void onBindViewHolder(@NonNull recyclerAdapter.AppViewHolder holder, int position) {
-        SpannableString appName = appListFiltered.get(position).appName;
-        holder.nameText.setText(appName);
-
-        // remove all the spans after the string has been set
-        Object[] spans = appName.getSpans(0, appName.length(), Object.class);
-        for (Object span : spans) {
-            appName.removeSpan(span);
+        App app = appListFiltered.get(position);
+        CharSequence displayName = holder.itemView.getContext().getPackageManager()
+                .getUserBadgedLabel(app.appName, app.userHandle);
+        SpannableString label = new SpannableString(displayName);
+        String query = activeQuery.toLowerCase(Locale.ROOT);
+        int queryIndex = displayName.toString().toLowerCase(Locale.ROOT).indexOf(query);
+        if (queryIndex >= 0 && !query.isEmpty()) {
+            label.setSpan(new UnderlineSpan(), queryIndex, queryIndex + query.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
+        holder.nameText.setText(label);
     }
 
     @Override

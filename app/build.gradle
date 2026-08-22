@@ -2,9 +2,27 @@ plugins {
     id 'com.android.application'
 }
 
+def releaseKeystore = System.getenv('PROMPTPAD_RELEASE_KEYSTORE')
+def releaseAlias = System.getenv('PROMPTPAD_RELEASE_ALIAS')
+def releaseStorePassword = System.getenv('PROMPTPAD_RELEASE_STORE_PASSWORD')
+def releaseKeyPassword = System.getenv('PROMPTPAD_RELEASE_KEY_PASSWORD')
+def hasReleaseSigning = [releaseKeystore, releaseAlias, releaseStorePassword, releaseKeyPassword]
+        .every { it != null && !it.trim().isEmpty() }
+
 android {
     namespace 'me.pompel.elauncher'
     compileSdk 36
+
+    signingConfigs {
+        promptpadRelease {
+            if (hasReleaseSigning) {
+                storeFile file(releaseKeystore)
+                storePassword releaseStorePassword
+                keyAlias releaseAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
 
     defaultConfig {
         applicationId "me.pompel.elauncher"
@@ -22,11 +40,20 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.promptpadRelease
+            }
         }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    if (taskGraph.allTasks.any { it.name.toLowerCase().contains('release') } && !hasReleaseSigning) {
+        throw new GradleException('Release builds require PROMPTPAD_RELEASE_* environment variables')
     }
 }
 
