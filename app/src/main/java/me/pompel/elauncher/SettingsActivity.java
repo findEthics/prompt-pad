@@ -6,7 +6,6 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 
 import androidx.annotation.NonNull;
-import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -35,12 +34,6 @@ public class SettingsActivity extends AppCompatActivity {
             return insets;
         });
         ViewCompat.requestApplyInsets(settingsRoot);
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                restartApplication();
-            }
-        });
         if (savedInstanceState == null) {
             getSupportFragmentManager()
                     .beginTransaction()
