@@ -5,10 +5,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.content.Context;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.app.Activity;
 import android.graphics.Typeface;
+import android.os.Process;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
@@ -118,7 +120,8 @@ public class MainActivityInputInstrumentedTest {
     @Test
     public void appSearchRequiresContiguousCaseInsensitiveMatch() {
         ArrayList<App> apps = new ArrayList<>();
-        apps.add(new App("Calendar", "com.google.android.calendar"));
+        apps.add(new App("Calendar", new ComponentName("com.google.android.calendar",
+                "com.google.android.calendar.CalendarActivity"), Process.myUserHandle()));
         final boolean[] clicked = {false};
         recyclerAdapter adapter = new recyclerAdapter(apps, new recyclerAdapter.RecyclerViewClickListener() {
             @Override

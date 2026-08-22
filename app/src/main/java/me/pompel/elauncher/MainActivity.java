@@ -17,11 +17,15 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.LauncherActivityInfo;
+import android.content.pm.LauncherApps;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.UserHandle;
+import android.os.UserManager;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -89,10 +93,13 @@ public class MainActivity extends AppCompatActivity {
     private void loadApps() {
         appList.clear();
 
-        PackageManager packageManager = getApplicationContext().getPackageManager();
-        Intent intent = new Intent(Intent.ACTION_MAIN, null);
-        intent.addCategory(Intent.CATEGORY_LAUNCHER);
-        for (ResolveInfo info : packageManager.queryIntentActivities(intent, 0)) appList.add(new App(info.loadLabel(packageManager).toString(), info.activityInfo.packageName));
+        LauncherApps launcherApps = (LauncherApps) getSystemService(Context.LAUNCHER_APPS_SERVICE);
+        UserManager userManager = (UserManager) getSystemService(Context.USER_SERVICE);
+        for (UserHandle user : userManager.getUserProfiles()) {
+            for (LauncherActivityInfo activity : launcherApps.getActivityList(null, user)) {
+                appList.add(new App(activity.getLabel().toString(), activity.getComponentName(), user));
+            }
+        }
         Collections.sort(appList, (app1, app2) -> app1.appName.toString().compareToIgnoreCase(app2.appName.toString()));
     }
 
@@ -152,6 +159,18 @@ public class MainActivity extends AppCompatActivity {
         search.setText("");
         if (intent != null) startActivity(intent);
         if (change) changeLayout(true, false);
+    }
+
+    private void openApp(App app) {
+        keyboardAction(true);
+        search.setText("");
+        try {
+            ((LauncherApps) getSystemService(Context.LAUNCHER_APPS_SERVICE)).startMainActivity(
+                    app.componentName, app.userHandle, null, null);
+        } catch (ActivityNotFoundException | SecurityException ignored) {
+            Toast.makeText(this, "App is unavailable", Toast.LENGTH_SHORT).show();
+        }
+        changeLayout(true, false);
     }
 
     private void handleBack() {
@@ -214,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
         adapter = new recyclerAdapter(appList, new recyclerAdapter.RecyclerViewClickListener() {
             @Override
             public void onClick(App app) {
-                openAppWithIntent(getPackageManager().getLaunchIntentForPackage(app.packageId), true);
+                openApp(app);
             }
 
             @Override
