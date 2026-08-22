@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Promptpad app mark: a command prompt / forward-launch glyph on a black field.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#000000"
+        android:pathData="M0,0H108V108H0Z" />
+    <path
+        android:fillColor="#FF5B1A"
+        android:pathData="M29.5,38.9L32.8,34.7L55.4,53.4L33.8,72.5L30,68.4L47.1,53.4Z" />
+    <path
+        android:fillColor="#FF5B1A"
+        android:pathData="M54.2,64.1H78.4V69.8H54.2Z" />
+</vector>
