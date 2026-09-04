@@ -13,7 +13,7 @@
         android:id="@+id/command_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:fontFamily="@font/poppins"
+        app:fontFamily="@font/lato"
         android:textAlignment="center"
         android:textColor="?attr/colorPrimary"
         android:textSize="26sp" />
@@ -23,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        app:fontFamily="@font/poppins"
+        app:fontFamily="@font/lato"
         android:gravity="center"
         android:textColor="?attr/colorControlNormal"
         android:textSize="16sp" />

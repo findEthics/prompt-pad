@@ -12,8 +12,8 @@
         <item name="android:statusBarColor">@color/surface_dark</item>
         <item name="android:windowLightStatusBar">false</item>
 
-        <item name="fontFamily">@font/poppins</item>
-        <item name="android:fontFamily">@font/poppins</item>
+        <item name="fontFamily">@font/lato</item>
+        <item name="android:fontFamily">@font/lato</item>
         <item name="android:windowAnimationStyle">@null</item>
     </style>
     <style name="AppTheme.InvertedDark" parent="AppTheme" />
@@ -25,8 +25,11 @@
         <item name="android:background">@drawable/home_tile_background</item>
         <item name="android:textColor">@color/on_surface_dark</item>
         <item name="android:textSize">13sp</item>
+        <item name="android:fontFamily">@font/lato</item>
+        <item name="fontFamily">@font/lato</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:gravity">center</item>
+        <item name="android:focusable">false</item>
         <item name="android:drawablePadding">8dp</item>
         <item name="android:minWidth">48dp</item>
         <item name="android:minHeight">48dp</item>

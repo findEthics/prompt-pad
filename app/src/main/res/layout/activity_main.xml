@@ -78,17 +78,42 @@
             android:paddingRight="1dp" />
 
         <TextView
+            android:id="@+id/meeting_card"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/home_card_background"
+            android:drawableStart="@drawable/ic_event"
+            android:drawablePadding="10dp"
+            android:drawableTint="@color/command_accent"
+            android:focusable="false"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:minHeight="48dp"
+            android:paddingHorizontal="14dp"
+            android:text="tap to allow calendar"
+            android:textColor="@color/on_surface_dark"
+            android:textSize="14sp" />
+
+        <TextView
             android:id="@+id/todo_card"
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginTop="4dp"
             android:background="@drawable/home_card_background"
-            android:drawablePadding="8dp"
+            android:drawableStart="@drawable/ic_todo"
+            android:drawablePadding="10dp"
+            android:drawableTint="@color/command_accent"
+            android:focusable="false"
+            android:ellipsize="end"
             android:gravity="center_vertical"
+            android:maxLines="1"
             android:minHeight="48dp"
+            android:paddingHorizontal="14dp"
+            android:text="no active tasks"
             android:textColor="@color/on_surface_dark"
-            android:textSize="14sp"
-            android:visibility="gone" />
+            android:textSize="14sp" />
 
         <GridLayout
             android:id="@+id/tile_grid"

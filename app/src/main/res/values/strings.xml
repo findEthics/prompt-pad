@@ -1,14 +1,10 @@
 <resources>
     <string name="app_name">Prompt-Pad</string>
     <string name="title_activity_settings">Prompt-Pad settings</string>
-    <string name="drawer_empty">Type to find apps</string>
-    <string name="command_hint">Search apps</string>
+    <string name="drawer_empty">Type to find apps or commands</string>
+    <string name="command_hint">Search apps or type !note / !todo</string>
     <string name="has_keyboard_title">Physical keyboard</string>
     <string name="has_keyboard_summary">Open search when typing from the home screen</string>
-    <string-array name="font_profile_entries">
-        <item>Minimal</item><item>Easier to read</item><item>Monospace</item>
-    </string-array>
-    <string-array name="font_profile_values">
-        <item>minimal</item><item>readable</item><item>mono</item>
-    </string-array>
+    <string name="tap_to_sleep_accessibility_label">Prompt-Pad tap to sleep</string>
+    <string name="tap_to_sleep_accessibility_description">Locks the screen when you double-tap an empty area of the Prompt-Pad home screen.</string>
 </resources>

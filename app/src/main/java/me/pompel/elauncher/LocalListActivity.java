@@ -80,7 +80,7 @@ public class LocalListActivity extends AppCompatActivity {
         actionPill.setGravity(Gravity.CENTER);
         actionPill.setMinHeight(dp(48));
         actionPill.setPadding(dp(24), dp(10), dp(24), dp(10));
-        actionPill.setTypeface(ResourcesCompat.getFont(this, R.font.poppins));
+        actionPill.setTypeface(ResourcesCompat.getFont(this, R.font.lato));
         actionPill.setTextColor(ResourcesCompat.getColor(getResources(),
                 R.color.on_surface_dark,
                 getTheme()));
@@ -113,7 +113,7 @@ public class LocalListActivity extends AppCompatActivity {
         empty.setText(kind.emptyText);
         empty.setTextSize(20);
         empty.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        empty.setTypeface(ResourcesCompat.getFont(this, R.font.poppins));
+        empty.setTypeface(ResourcesCompat.getFont(this, R.font.lato));
         return empty;
     }
 
@@ -153,7 +153,7 @@ public class LocalListActivity extends AppCompatActivity {
                 label.setText(kind.checklist
                         ? item.getText()
                         : item.getText() + "\n" + noteDateFormat.format(item.getCreatedAtMillis()));
-                label.setTypeface(ResourcesCompat.getFont(LocalListActivity.this, R.font.poppins));
+                label.setTypeface(ResourcesCompat.getFont(LocalListActivity.this, R.font.lato));
                 label.setOnClickListener(view -> editItem(item));
                 LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(
                         0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);

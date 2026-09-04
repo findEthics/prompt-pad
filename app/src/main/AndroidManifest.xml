@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools" >
 
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -41,6 +42,10 @@
             android:exported="false"
             android:label="To-dos" />
         <activity
+            android:name=".GroceryActivity"
+            android:exported="false"
+            android:label="Groceries" />
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:windowSoftInputMode="stateAlwaysHidden|adjustResize" >
@@ -52,6 +57,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".TapToSleepAccessibilityService"
+            android:exported="false"
+            android:label="@string/tap_to_sleep_accessibility_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/tap_to_sleep_accessibility_service" />
+        </service>
 
     </application>
 

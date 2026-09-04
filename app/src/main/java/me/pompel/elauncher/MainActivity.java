@@ -1,7 +1,9 @@
 package me.pompel.elauncher;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -9,6 +11,7 @@ import android.content.pm.LauncherActivityInfo;
 import android.content.pm.LauncherApps;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.database.Cursor;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.content.res.Configuration;
@@ -32,6 +35,8 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -41,18 +46,27 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /** Offline, dark-only home launcher optimized for the Titan 4:3 display. */
 public class MainActivity extends AppCompatActivity {
     static final String HAS_KEYBOARD_PREFERENCE = "has_keyboard_preference";
+    private static final int CALENDAR_PERMISSION_REQUEST = 41;
     private final ArrayList<App> apps = new ArrayList<>();
     private SharedPreferences prefs;
     private EditText search;
     private RecyclerView recycler;
     private recyclerAdapter adapter;
+    private CommandAdapter commandAdapter;
+    private CommandParser commandParser;
+    private LocalListRepository notesRepository;
+    private LocalListRepository todosRepository;
     private float downY;
+    private boolean commandEnterDown;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -88,6 +102,11 @@ public class MainActivity extends AppCompatActivity {
         search = findViewById(R.id.search);
         recycler = findViewById(R.id.recycler_view);
         recycler.setLayoutManager(new LinearLayoutManager(this));
+        commandParser = new CommandParser();
+        SharedPreferencesKeyValueStore listStore = new SharedPreferencesKeyValueStore(
+                getSharedPreferences("command_data", MODE_PRIVATE));
+        notesRepository = new LocalListRepository(listStore, LocalListKind.NOTES);
+        todosRepository = new LocalListRepository(listStore, LocalListKind.TODOS);
         loadApps();
         adapter = new recyclerAdapter(apps, new recyclerAdapter.RecyclerViewClickListener() {
             @Override public void onClick(App app) { openApp(app); }
@@ -96,22 +115,98 @@ public class MainActivity extends AppCompatActivity {
                         Uri.parse("package:" + app.packageId)));
             }
         });
+        commandAdapter = new CommandAdapter(new CommandAdapter.Listener() {
+            @Override public void onEdit(String query) {
+                search.setText(query);
+                search.setSelection(query.length());
+            }
+            @Override public void onSubmit(String query) { executeListCommand(query); }
+            @Override public void onOpenSettings() {
+                launch(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:" + getPackageName())));
+            }
+        });
         recycler.setAdapter(adapter);
         search.addTextChangedListener(new android.text.TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                adapter.filter(s.toString());
+                CommandAdapter.styleCommandToken(MainActivity.this, search.getText());
+                CommandQueryClassifier.Result result = CommandQueryClassifier.classify(s.toString());
+                boolean command = result.getDisplayState() != CommandQueryClassifier.DisplayState.APP_RESULTS;
+                if (command) {
+                    if (recycler.getAdapter() != commandAdapter) recycler.setAdapter(commandAdapter);
+                    commandAdapter.submit(result);
+                } else {
+                    if (recycler.getAdapter() != adapter) recycler.setAdapter(adapter);
+                    adapter.filter(result.getAppQuery());
+                }
                 findViewById(R.id.drawer_empty).setVisibility(s.length() == 0 ? View.VISIBLE : View.GONE);
             }
             @Override public void afterTextChanged(android.text.Editable s) { }
         });
+        search.setOnKeyListener((view, keyCode, event) -> {
+            if (keyCode != KeyEvent.KEYCODE_ENTER && keyCode != KeyEvent.KEYCODE_NUMPAD_ENTER) return false;
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                commandEnterDown = submitCommandFromInput();
+                return commandEnterDown;
+            }
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                boolean handled = commandEnterDown;
+                commandEnterDown = false;
+                return handled;
+            }
+            return false;
+        });
         search.setOnEditorActionListener((view, actionId, event) -> {
+            String query = search.getText().toString();
+            if (query.startsWith("!")) {
+                executeListCommand(query);
+                return true;
+            }
             if (recycler.findViewHolderForAdapterPosition(0) != null) {
                 recycler.findViewHolderForAdapterPosition(0).itemView.performClick();
                 return true;
             }
             return false;
         });
+    }
+
+    private boolean submitCommandFromInput() {
+        String query = search.getText().toString();
+        if (!query.startsWith("!")) return false;
+        executeListCommand(query);
+        return true;
+    }
+
+    private void executeListCommand(String query) {
+        CommandParser.ParseResult parsed = commandParser.parse(query);
+        if (!parsed.isSuccess()) {
+            commandAdapter.showStatus(parsed.getError().getMessage(), parsed.getError().getSyntax());
+            return;
+        }
+        CommandParser.Command command = parsed.getCommand();
+        switch (command.getType()) {
+            case NOTE:
+                notesRepository.add(((CommandParser.NoteCommand) command).getText());
+                commandAdapter.showStatus("Note saved", "Stored locally");
+                break;
+            case NOTES:
+                launch(new Intent(this, NotesActivity.class));
+                break;
+            case TODO:
+                todosRepository.add(((CommandParser.TodoCommand) command).getText());
+                commandAdapter.showStatus("To-do saved", "Stored locally");
+                refreshTodoCard();
+                break;
+            case TODOS:
+                launch(new Intent(this, TodosActivity.class));
+                break;
+            default:
+                commandAdapter.showStatus("Offline command", "Use !note, !notes, !todo, or !todos");
+                break;
+        }
+        search.setText("");
+        recycler.setAdapter(commandAdapter);
     }
 
     private void loadApps() {
@@ -141,6 +236,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void bindTile(int viewId, int position, Intent defaultIntent) {
         Button tile = findViewById(viewId);
+        tile.setTypeface(ResourcesCompat.getFont(this, R.font.lato_bold));
         String packageName = prefs.getString("tile_package_" + position, null);
         if (packageName != null) {
             Intent custom = getPackageManager().getLaunchIntentForPackage(packageName);
@@ -185,9 +281,19 @@ public class MainActivity extends AppCompatActivity {
         View home = findViewById(R.id.HomeScreen);
         GestureDetector detector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             @Override public boolean onDown(@NonNull MotionEvent event) { return true; }
+            @Override public boolean onDoubleTap(@NonNull MotionEvent event) {
+                return TapToSleepAccessibilityService.lockScreen();
+            }
             @Override public boolean onFling(MotionEvent first, MotionEvent second, float vx, float vy) {
-                if (first != null && first.getY() - second.getY() > dp(56) && Math.abs(vy) > 100) {
+                if (first == null) return false;
+                float dx = second.getX() - first.getX();
+                float dy = second.getY() - first.getY();
+                if (-dy > dp(56) && Math.abs(vy) > 100) {
                     showDrawer();
+                    return true;
+                }
+                if (-dx > dp(56) && Math.abs(vx) > 100) {
+                    startActivity(new Intent(MainActivity.this, SettingsActivity.class));
                     return true;
                 }
                 return false;
@@ -240,6 +346,7 @@ public class MainActivity extends AppCompatActivity {
     @Override protected void onResume() {
         super.onResume();
         refreshPeak();
+        refreshMeetingCard();
         refreshTodoCard();
         ((ActivityBarView) findViewById(R.id.activity_bar)).refresh();
     }
@@ -259,19 +366,57 @@ public class MainActivity extends AppCompatActivity {
         peak.setGravity(prefs.getBoolean("peak_right", false) ? android.view.Gravity.END : android.view.Gravity.START);
     }
 
+    private void refreshMeetingCard() {
+        TextView card = findViewById(R.id.meeting_card);
+        card.setOnClickListener(view -> {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.READ_CALENDAR}, CALENDAR_PERMISSION_REQUEST);
+            } else {
+                launch(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALENDAR));
+            }
+        });
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR)
+                != PackageManager.PERMISSION_GRANTED) {
+            card.setText("tap to show next meeting");
+            return;
+        }
+        long now = System.currentTimeMillis();
+        Calendar end = Calendar.getInstance();
+        end.setTimeInMillis(now);
+        end.add(Calendar.DAY_OF_YEAR, 7);
+        Uri.Builder builder = CalendarContract.Instances.CONTENT_URI.buildUpon();
+        ContentUris.appendId(builder, now);
+        ContentUris.appendId(builder, end.getTimeInMillis());
+        String[] projection = {CalendarContract.Instances.TITLE, CalendarContract.Instances.BEGIN};
+        try (Cursor cursor = getContentResolver().query(builder.build(), projection, null, null,
+                CalendarContract.Instances.BEGIN + " ASC")) {
+            if (cursor != null && cursor.moveToFirst()) {
+                String title = cursor.getString(0);
+                long begin = cursor.getLong(1);
+                String time = new java.text.SimpleDateFormat("h:mm a", Locale.getDefault())
+                        .format(new Date(begin)).toLowerCase(Locale.getDefault());
+                card.setText(title + " · " + time);
+            } else {
+                card.setText("no upcoming meetings");
+            }
+        } catch (SecurityException exception) {
+            card.setText("tap to show next meeting");
+        }
+    }
+
+    @Override public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                                      @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CALENDAR_PERMISSION_REQUEST) refreshMeetingCard();
+    }
+
     private void refreshTodoCard() {
-        LocalListRepository repository = new LocalListRepository(new SharedPreferencesKeyValueStore(
-                getSharedPreferences("command_data", MODE_PRIVATE)), LocalListKind.TODOS);
         TextView card = findViewById(R.id.todo_card);
         LocalListItem first = null;
-        for (LocalListItem item : repository.list()) if (!item.isCompleted()) { first = item; break; }
-        if (first == null) {
-            card.setVisibility(View.GONE);
-        } else {
-            card.setText(first.getText());
-            card.setVisibility(View.VISIBLE);
-            card.setOnClickListener(view -> launch(new Intent(this, TodosActivity.class)));
-        }
+        for (LocalListItem item : todosRepository.list()) if (!item.isCompleted()) { first = item; break; }
+        card.setText(first == null ? "no active tasks" : first.getText());
+        card.setOnClickListener(view -> launch(new Intent(this, TodosActivity.class)));
     }
 
     @Override public boolean onKeyDown(int keyCode, KeyEvent event) {

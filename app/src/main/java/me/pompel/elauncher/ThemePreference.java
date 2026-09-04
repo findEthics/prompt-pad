@@ -8,9 +8,9 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.preference.PreferenceManager;
+import androidx.core.content.res.ResourcesCompat;
 
-/** Enforces the launcher's dark-only visual profile and selected local font. */
+/** Enforces Prompt-Pad's single dark theme and Katapult typography. */
 final class ThemePreference {
     private ThemePreference() { }
 
@@ -22,18 +22,15 @@ final class ThemePreference {
     static boolean isDarkMode(Context context) { return true; }
 
     static void applyTypography(View root, Context context) {
-        String profile = PreferenceManager.getDefaultSharedPreferences(context)
-                .getString("font_profile", "minimal");
-        Typeface face;
-        if ("readable".equals(profile)) face = Typeface.create("sans-serif", Typeface.NORMAL);
-        else if ("mono".equals(profile)) face = Typeface.MONOSPACE;
-        else face = Typeface.create("poppins", Typeface.NORMAL);
-        applyTypeface(root, face);
+        applyTypeface(root, ResourcesCompat.getFont(context, R.font.lato));
     }
 
     private static void applyTypeface(View view, Typeface face) {
-        if (view instanceof TextView) ((TextView) view).setTypeface(face,
-                ((TextView) view).getTypeface() == null ? Typeface.NORMAL : ((TextView) view).getTypeface().getStyle());
+        if (view instanceof TextView) {
+            TextView text = (TextView) view;
+            text.setTypeface(face, text.getTypeface() == null
+                    ? Typeface.NORMAL : text.getTypeface().getStyle());
+        }
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
             for (int i = 0; i < group.getChildCount(); i++) applyTypeface(group.getChildAt(i), face);

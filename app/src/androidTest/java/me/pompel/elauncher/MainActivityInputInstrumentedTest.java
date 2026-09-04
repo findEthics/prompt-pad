@@ -99,7 +99,7 @@ public class MainActivityInputInstrumentedTest {
     }
 
     @Test
-    public void darkThemeIsTheDefaultButSavedChoiceWins() {
+    public void darkThemeCannotBeDisabled() {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         boolean hadPreference = preferences.contains("dark_mode_preference");
@@ -108,7 +108,7 @@ public class MainActivityInputInstrumentedTest {
             preferences.edit().remove("dark_mode_preference").commit();
             assertTrue(ThemePreference.isDarkMode(context));
             preferences.edit().putBoolean("dark_mode_preference", false).commit();
-            assertTrue(!ThemePreference.isDarkMode(context));
+            assertTrue(ThemePreference.isDarkMode(context));
         } finally {
             SharedPreferences.Editor editor = preferences.edit();
             if (hadPreference) editor.putBoolean("dark_mode_preference", previousValue);

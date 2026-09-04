@@ -49,6 +49,11 @@ public class SettingsActivity extends AppCompatActivity {
                 startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
                 return true;
             });
+            Preference tapToSleep = findPreference("tap_to_sleep");
+            if (tapToSleep != null) tapToSleep.setOnPreferenceClickListener(preference -> {
+                startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                return true;
+            });
             addDistractingAppsPreference();
         }
 
