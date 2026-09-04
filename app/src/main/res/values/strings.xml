@@ -1,16 +1,14 @@
 <resources>
-    <string name="title_activity_settings">Promptpad Settings</string>
-    <string name="drawer_empty">Type to summon apps</string>
-    <string name="home_drawer_empty">Type/Swipe Up to summon apps</string>
-    <string name="command_hint">! for commands</string>
-    <string name="settings_hint">Touch and hold to open settings</string>
-    <string name="dismiss_instructions">Dismiss instructions</string>
-    <string name="dark_mode_title">Dark Mode</string>
-    <string name="dark_mode_summary">Enable or disable dark mode</string>
+    <string name="app_name">Prompt-Pad</string>
+    <string name="title_activity_settings">Prompt-Pad settings</string>
+    <string name="drawer_empty">Type to find apps</string>
+    <string name="command_hint">Search apps</string>
     <string name="has_keyboard_title">Physical keyboard</string>
     <string name="has_keyboard_summary">Open search when typing from the home screen</string>
-    <string name="natural_language_commands_title">Natural language commands (beta)</string>
-    <string name="natural_language_commands_summary">Interpret unmatched searches on-device</string>
-    <string name="hermes_username_title">Hermes Telegram Bot</string>
-    <string name="hermes_username_summary">Username used by !hermes</string>
+    <string-array name="font_profile_entries">
+        <item>Minimal</item><item>Easier to read</item><item>Monospace</item>
+    </string-array>
+    <string-array name="font_profile_values">
+        <item>minimal</item><item>readable</item><item>mono</item>
+    </string-array>
 </resources>

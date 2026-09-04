@@ -1,21 +1,23 @@
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
-    <SwitchPreferenceCompat
-        app:key="dark_mode_preference"
-        app:title="@string/dark_mode_title"
-        app:summary="@string/dark_mode_summary" />
-    <SwitchPreferenceCompat
-        app:key="has_keyboard_preference"
-        app:title="@string/has_keyboard_title"
-        app:summary="@string/has_keyboard_summary" />
-    <SwitchPreferenceCompat
-        app:key="natural_language_commands_preference"
-        app:title="@string/natural_language_commands_title"
-        app:summary="@string/natural_language_commands_summary" />
-    <EditTextPreference
-        app:key="hermes_username_preference"
-        app:title="@string/hermes_username_title"
-        app:summary="@string/hermes_username_summary"
-        app:useSimpleSummaryProvider="true"
-        android:inputType="text" />
+    <PreferenceCategory app:title="Home">
+        <SwitchPreferenceCompat app:key="has_keyboard_preference" app:title="Physical keyboard" app:summary="Type from Home to search apps" />
+        <SwitchPreferenceCompat app:key="show_battery" app:title="Show battery" android:defaultValue="true" />
+        <SwitchPreferenceCompat app:key="show_weather" app:title="Show offline weather" app:summary="Displays only the local text entered below" />
+        <EditTextPreference app:key="offline_weather" app:title="Offline weather text" app:useSimpleSummaryProvider="true" />
+        <SwitchPreferenceCompat app:key="peak_right" app:title="Right-align Peak widget" />
+    </PreferenceCategory>
+    <PreferenceCategory app:title="Appearance">
+        <ListPreference
+            app:key="font_profile"
+            app:title="Font profile"
+            app:entries="@array/font_profile_entries"
+            app:entryValues="@array/font_profile_values"
+            app:defaultValue="minimal"
+            app:useSimpleSummaryProvider="true" />
+        <SwitchPreferenceCompat app:key="reduce_motion" app:title="Reduce motion" app:summary="Use instantaneous screen changes" android:defaultValue="true" />
+    </PreferenceCategory>
+    <PreferenceCategory app:title="Activity dots">
+        <Preference app:key="usage_access" app:title="Usage access" app:summary="Allow local, on-device activity classification" />
+    </PreferenceCategory>
 </PreferenceScreen>

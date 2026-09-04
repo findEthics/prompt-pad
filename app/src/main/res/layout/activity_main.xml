@@ -1,172 +1,166 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/MainLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:animateLayoutChanges="false"
-    android:background="?attr/android:colorBackground"
-    tools:context=".MainActivity">
+    android:background="@color/surface_dark">
 
-    <FrameLayout
+    <LinearLayout
         android:id="@+id/HomeScreen"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:animateLayoutChanges="false"
-        >
+        android:orientation="vertical"
+        android:paddingLeft="12dp"
+        android:paddingTop="8dp"
+        android:paddingRight="12dp"
+        android:paddingBottom="10dp">
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:id="@+id/peak_widget"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:orientation="vertical">
+            android:gravity="bottom"
+            android:orientation="horizontal"
+            android:paddingLeft="32dp">
 
-            <TextClock
-                android:id="@+id/home_clock"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:format12Hour="HH:mm"
-                android:format24Hour="HH:mm"
-                android:textColor="?attr/colorPrimary"
-                android:textSize="72sp"
-                app:fontFamily="@font/poppins" />
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextClock
-                android:id="@+id/home_date"
+                <TextClock
+                    android:id="@+id/home_clock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:format12Hour="EEEE"
+                    android:format24Hour="EEEE"
+                    android:textColor="@color/on_surface_dark"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <TextClock
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:format12Hour="MMMM d"
+                    android:format24Hour="MMMM d"
+                    android:textColor="@color/on_surface_dark"
+                    android:textSize="21sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:format12Hour="d MMMM"
-                android:format24Hour="d MMMM"
-                android:textColor="?attr/colorPrimary"
-                android:textSize="24sp"
-                app:fontFamily="@font/poppins" />
+                android:layout_height="match_parent"
+                android:gravity="bottom|end"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/weather_indicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/command_accent"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+                <TextView
+                    android:id="@+id/battery_indicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/secondary_text"
+                    android:textSize="12sp" />
+            </LinearLayout>
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/home_instructions"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginBottom="24dp"
-            android:gravity="center"
-            android:orientation="vertical">
+        <me.pompel.elauncher.ActivityBarView
+            android:id="@+id/activity_bar"
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:paddingLeft="1dp"
+            android:paddingRight="1dp" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/home_drawer_empty"
-                android:textColor="?attr/colorControlNormal"
-                android:textSize="12sp"
-                app:fontFamily="@font/poppins" />
+        <TextView
+            android:id="@+id/todo_card"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/home_card_background"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:textColor="@color/on_surface_dark"
+            android:textSize="14sp"
+            android:visibility="gone" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/command_hint"
-                android:textColor="?attr/colorControlNormal"
-                android:textSize="9sp"
-                app:fontFamily="@font/poppins" />
+        <GridLayout
+            android:id="@+id/tile_grid"
+            android:layout_width="match_parent"
+            android:layout_height="176dp"
+            android:layout_marginTop="6dp"
+            android:alignmentMode="alignMargins"
+            android:columnCount="4"
+            android:rowCount="2"
+            android:useDefaultMargins="false">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/settings_hint"
-                android:textColor="?attr/colorControlNormal"
-                android:textSize="9sp"
-                app:fontFamily="@font/poppins" />
+            <Button android:id="@+id/tile_note" style="@style/HomeTile" android:layout_columnWeight="1" android:layout_rowWeight="1" android:drawableTop="@drawable/ic_note" android:text="Note" />
+            <Button android:id="@+id/tile_event" style="@style/HomeTile" android:layout_columnWeight="1" android:layout_rowWeight="1" android:drawableTop="@drawable/ic_event" android:text="Event" />
+            <Button android:id="@+id/tile_clock" style="@style/HomeTile" android:layout_columnWeight="1" android:layout_rowWeight="1" android:drawableTop="@drawable/ic_clock" android:text="Clock" />
+            <Button android:id="@+id/tile_todo" style="@style/HomeTile" android:layout_columnWeight="1" android:layout_rowWeight="1" android:drawableTop="@drawable/ic_todo" android:text="To Do" />
+            <Button android:id="@+id/tile_call" style="@style/HomeTile" android:layout_columnWeight="1" android:layout_rowWeight="1" android:drawableTop="@drawable/ic_call" android:text="Call" />
+            <Button android:id="@+id/tile_message" style="@style/HomeTile" android:layout_columnWeight="1" android:layout_rowWeight="1" android:drawableTop="@drawable/ic_message" android:text="Message" />
+            <Button android:id="@+id/tile_camera" style="@style/HomeTile" android:layout_columnWeight="1" android:layout_rowWeight="1" android:drawableTop="@drawable/ic_camera" android:text="Camera" />
+            <Button android:id="@+id/tile_memo" style="@style/HomeTile" android:layout_columnWeight="1" android:layout_rowWeight="1" android:drawableTop="@drawable/ic_memo" android:text="Memo" />
+        </GridLayout>
+    </LinearLayout>
 
-            <Button
-                android:id="@+id/dismiss_instructions"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:text="@string/dismiss_instructions"
-                android:textSize="12sp" />
-        </LinearLayout>
-    </FrameLayout>
-
-    <RelativeLayout
+    <LinearLayout
         android:id="@+id/AppDrawer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone"
-        android:animateLayoutChanges="false"
-        tools:context=".MainActivity">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_above="@id/search" />
-
-        <LinearLayout
-            android:id="@+id/drawer_empty"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/drawer_empty"
-                android:textColor="?attr/colorControlNormal"
-                android:textSize="24sp"
-                app:fontFamily="@font/poppins" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/command_hint"
-                android:textColor="?attr/colorControlNormal"
-                android:textSize="12sp"
-                app:fontFamily="@font/poppins" />
-        </LinearLayout>
+        android:background="@color/surface_dark"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:visibility="gone">
 
         <EditText
             android:id="@+id/search"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="50dp"
-            android:layout_marginEnd="20dp"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentStart="true"
+            android:layout_height="48dp"
             android:background="@drawable/search_bar_background"
-            android:ems="10"
-            app:fontFamily="@font/poppins"
-            android:imeOptions="actionDone"
+            android:hint="@string/drawer_empty"
+            android:imeOptions="actionGo"
             android:inputType="text"
+            android:paddingHorizontal="12dp"
             android:singleLine="true"
-            android:textAlignment="center"
-            android:textColor="?attr/colorPrimary"
-            android:textSize="32sp" />
+            android:textColor="@color/on_surface_dark"
+            android:textColorHint="@color/outline_dark" />
 
-    </RelativeLayout>
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+            <TextView
+                android:id="@+id/drawer_empty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/drawer_empty"
+                android:textColor="@color/outline_dark"
+                android:textSize="16sp" />
+        </FrameLayout>
+    </LinearLayout>
 
     <TextView
         android:id="@+id/save_pill"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="62dp"
+        android:layout_marginBottom="12dp"
         android:background="@drawable/save_pill_background"
-        android:fontFamily="@font/poppins"
-        android:gravity="center"
-        android:minHeight="48dp"
-        android:paddingStart="24dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="24dp"
-        android:paddingBottom="10dp"
-        android:textColor="?attr/colorPrimary"
-        android:textSize="16sp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp"
+        android:textColor="@color/on_surface_dark"
         android:visibility="gone" />
 </FrameLayout>

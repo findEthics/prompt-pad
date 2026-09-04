@@ -82,7 +82,7 @@ public class LocalListActivity extends AppCompatActivity {
         actionPill.setPadding(dp(24), dp(10), dp(24), dp(10));
         actionPill.setTypeface(ResourcesCompat.getFont(this, R.font.poppins));
         actionPill.setTextColor(ResourcesCompat.getColor(getResources(),
-                ThemePreference.isDarkMode(this) ? R.color.on_surface_dark : R.color.on_surface_light,
+                R.color.on_surface_dark,
                 getTheme()));
         actionPill.setTextSize(16);
         actionPill.setVisibility(View.GONE);
@@ -186,9 +186,14 @@ public class LocalListActivity extends AppCompatActivity {
         input.setText(item.getText());
         input.setSelection(input.length());
 
+        FrameLayout inputContainer = new FrameLayout(this);
+        inputContainer.setPadding(dp(20), 0, dp(20), 0);
+        inputContainer.addView(input, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("Edit item")
-                .setView(input, dp(20), 0, dp(20), 0)
+                .setView(inputContainer)
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton("Save", null)
                 .create();
