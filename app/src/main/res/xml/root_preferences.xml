@@ -14,4 +14,18 @@
         app:summary="@string/hermes_username_summary"
         app:useSimpleSummaryProvider="true"
         android:inputType="text" />
+    <SwitchPreferenceCompat
+        app:key="weather_in_peak_widget"
+        app:title="@string/weather_enabled_title"
+        app:summary="@string/weather_enabled_summary"
+        android:defaultValue="false" />
+    <EditTextPreference
+        app:key="weather_location_input"
+        app:title="@string/weather_location_title"
+        app:summary="@string/weather_location_summary"
+        android:inputType="text" />
+    <Preference
+        app:title="@string/weather_attribution"
+        app:summary="@string/weather_license"
+        app:selectable="false" />
 </PreferenceScreen>

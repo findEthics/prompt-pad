@@ -102,7 +102,7 @@ public class SettingsActivity extends AppCompatActivity {
                     findPreference(MainActivity.HAS_KEYBOARD_PREFERENCE);
             if (keyboardPreference != null) {
                 android.content.SharedPreferences prefs =
-                        androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext());
+                    androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext());
                 if (!prefs.contains(MainActivity.HAS_KEYBOARD_PREFERENCE)) {
                     keyboardPreference.setChecked(MainActivity.hasHardwareKeyboard(requireContext()));
                     prefs.edit().remove(MainActivity.HAS_KEYBOARD_PREFERENCE).apply();
@@ -129,6 +129,32 @@ public class SettingsActivity extends AppCompatActivity {
                     }
                     if (!normalized.equals(raw)) {
                         hermesUsername.setText(normalized);
+                        return false;
+                    }
+                    return true;
+                });
+            }
+
+            EditTextPreference weatherLocation = findPreference(Weather.LOCATION_INPUT);
+            if (weatherLocation != null) {
+                weatherLocation.setOnPreferenceChangeListener((preference, newValue) -> {
+                    android.content.SharedPreferences prefs =
+                            androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext());
+                    String raw = newValue == null ? "" : newValue.toString().trim();
+                    if (raw.isEmpty()) {
+                        Weather.clearLocation(prefs);
+                        return true;
+                    }
+                    Weather.Location location = Weather.Location.parse(raw);
+                    if (location == null) {
+                        Toast.makeText(requireContext(), "Use label, latitude, longitude.",
+                                Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
+                    Weather.saveLocation(prefs, location);
+                    String normalized = location.normalizedInput();
+                    if (!normalized.equals(raw)) {
+                        weatherLocation.setText(normalized);
                         return false;
                     }
                     return true;

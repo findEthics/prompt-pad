@@ -11,4 +11,10 @@
     <string name="has_keyboard_summary">Open Promptpad search when typing from the home screen</string>
     <string name="hermes_username_title">Hermes Telegram Bot</string>
     <string name="hermes_username_summary">Username used by !hermes</string>
+    <string name="weather_enabled_title">Weather in peak widget</string>
+    <string name="weather_enabled_summary">Show the current weather below the date</string>
+    <string name="weather_location_title">Weather location</string>
+    <string name="weather_location_summary">Label, latitude, longitude</string>
+    <string name="weather_attribution">Weather data: MET Norway (CC BY 4.0)</string>
+    <string name="weather_license">CC BY 4.0 licence.</string>
 </resources>

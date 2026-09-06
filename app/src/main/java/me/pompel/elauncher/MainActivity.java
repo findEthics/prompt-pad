@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText search;
     private View drawerEmpty;
     private TextView savePill;
+    private TextView weather;
     private SharedPreferences prefs;
 
     private recyclerAdapter adapter;
@@ -225,6 +226,7 @@ public class MainActivity extends AppCompatActivity {
         search = findViewById(R.id.search);
         drawerEmpty = findViewById(R.id.drawer_empty);
         savePill = findViewById(R.id.save_pill);
+        weather = findViewById(R.id.home_weather);
         contactsResolver = new ContactsResolver(this);
         torchController = new TorchController(this);
         SharedPreferences commandPreferences = getSharedPreferences("command_data", MODE_PRIVATE);
@@ -356,6 +358,12 @@ public class MainActivity extends AppCompatActivity {
 
         new SwipeListener(findViewById(R.id.HomeScreen));
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Weather.refresh(this, weather);
     }
 
     @Override
