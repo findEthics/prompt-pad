@@ -22,6 +22,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 val HUB_FILTERS = listOf("All", "Messages", "Calls", "Emails", "Starred")
@@ -88,7 +89,8 @@ fun HubScreen(back: () -> Unit) {
                                 }.padding(start = 8.dp),
                                 style = MaterialTheme.typography.bodyMedium, color = Accent)
                         }
-                        if (item.text.isNotBlank()) Text(item.text, style = MaterialTheme.typography.bodySmall, color = Dim)
+                        if (item.text.isNotBlank()) Text(item.text, style = MaterialTheme.typography.bodySmall, color = Dim,
+                            maxLines = 5, overflow = TextOverflow.Ellipsis)
                         item.replies.forEach { Text("You: $it", style = MaterialTheme.typography.bodySmall, color = Accent) }
                         if (replyingTo == item.key && item.reply != null) {
                             var draft by remember(item.key) { mutableStateOf("") }

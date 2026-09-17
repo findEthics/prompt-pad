@@ -147,7 +147,7 @@ fun PeakWidget(prefs: Prefs, tick: Int, nav: (Screen) -> Unit, editing: Boolean,
     ) {
         when (prefs.peakVariant) {
             1 -> {
-                val date = "${format("EEEE")}, ${format("MMMM d")}  ·  "
+                val date = "${format("EEE")}, ${format("MMM d")}  ·  "
                 Row {
                     Text(date, dateModifier, style = MaterialTheme.typography.headlineSmall)
                     Text(format("HH:mm"), clockModifier, style = MaterialTheme.typography.headlineSmall, color = Accent)
@@ -155,12 +155,12 @@ fun PeakWidget(prefs: Prefs, tick: Int, nav: (Screen) -> Unit, editing: Boolean,
             }
             2 -> {
                 Text(format("HH:mm"), clockModifier, style = MaterialTheme.typography.headlineSmall, color = Accent)
-                Text("${format("EEEE")}, ${format("MMMM d")}", dateModifier, style = MaterialTheme.typography.bodyMedium, color = Dim)
+                Text("${format("EEE")}, ${format("MMM d")}", dateModifier, style = MaterialTheme.typography.bodyMedium, color = Dim)
             }
             else -> {
                 Column(dateModifier) {
-                    Text("${format("EEEE")},", style = MaterialTheme.typography.headlineSmall)
-                    Text(format("MMMM d"), style = MaterialTheme.typography.headlineSmall)
+                    Text("${format("EEE")},", style = MaterialTheme.typography.headlineSmall)
+                    Text(format("MMM d"), style = MaterialTheme.typography.headlineSmall)
                 }
             }
         }

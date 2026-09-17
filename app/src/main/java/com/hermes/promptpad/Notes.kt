@@ -142,7 +142,6 @@ fun NoteEditor(note: Note, onChange: () -> Unit, onDelete: () -> Unit) {
     }
 
     fun update(value: TextFieldValue) { body = value; note.body = value.text; onChange() }
-    fun append(marker: String) = update(TextFieldValue(body.text + marker, TextRange(body.text.length + marker.length)))
     fun share() = ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, noteShareText(note))
@@ -194,8 +193,8 @@ fun NoteEditor(note: Note, onChange: () -> Unit, onDelete: () -> Unit) {
         }
         Row(Modifier.fillMaxWidth().heightIn(min = Dim2.touch), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly) {
-            listOf("H" to "\n# ", "B" to "**b**").forEach { (l, m) ->
-                Text(l, Modifier.weight(1f).clickable { append(m) }.padding(8.dp),
+            listOf("H" to ("\n# " to 3), "B" to ("****" to 2)).forEach { (l, spec) ->
+                Text(l, Modifier.weight(1f).clickable { update(insertAtCursor(body, spec.first, spec.second)) }.padding(8.dp),
                     style = MaterialTheme.typography.bodyMedium, color = if (preview) DotIdle else White,
                     textAlign = TextAlign.Center)
             }
@@ -239,9 +238,12 @@ fun insertListMarker(value: TextFieldValue, marker: String): TextFieldValue {
     return TextFieldValue(text, TextRange(value.selection.min + inserted.length))
 }
 
-fun insertCodeTicks(value: TextFieldValue): TextFieldValue {
+fun insertCodeTicks(value: TextFieldValue): TextFieldValue = insertAtCursor(value, "``", 1)
+
+/** Inserts [insert] at the cursor (replacing any selection), placing the cursor [cursorOffset] chars in. */
+fun insertAtCursor(value: TextFieldValue, insert: String, cursorOffset: Int): TextFieldValue {
     val at = value.selection.min
-    return TextFieldValue(value.text.replaceRange(at, value.selection.max, "``"), TextRange(at + 1))
+    return TextFieldValue(value.text.replaceRange(at, value.selection.max, insert), TextRange(at + cursorOffset))
 }
 
 fun noteShareText(note: Note) = listOf(note.title, note.body).filter(String::isNotBlank).joinToString("\n\n")

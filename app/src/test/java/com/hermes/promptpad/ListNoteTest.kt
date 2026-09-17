@@ -28,4 +28,14 @@ class ListNoteTest {
         assertEquals(TextFieldValue("a``b", TextRange(2)),
             insertCodeTicks(TextFieldValue("ab", TextRange(1))))
     }
+
+    @Test fun boldCommandInsertsMarkersWithCursorInside() {
+        assertEquals(TextFieldValue("a****b", TextRange(3)),
+            insertAtCursor(TextFieldValue("ab", TextRange(1)), "****", 2))
+    }
+
+    @Test fun headingCommandInsertsMarkerWithCursorAfterHash() {
+        assertEquals(TextFieldValue("a\n# b", TextRange(4)),
+            insertAtCursor(TextFieldValue("ab", TextRange(1)), "\n# ", 3))
+    }
 }

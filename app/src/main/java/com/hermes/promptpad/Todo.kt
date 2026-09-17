@@ -92,7 +92,7 @@ fun TodoScreen(back: () -> Unit) {
                     if (reordering) { focusManager.clearFocus(); keyboard?.hide() }
                 }.padding(vertical = 12.dp), style = MaterialTheme.typography.bodyMedium, color = Accent)
             Spacer(Modifier.weight(1f))
-            Text("Clear", Modifier.heightIn(min = Dim2.touch).clickable {
+            Text("clear", Modifier.heightIn(min = Dim2.touch).clickable {
                 tasks = clearDone(tasks); store.saveTasks(tasks)
             }.padding(vertical = 12.dp), style = MaterialTheme.typography.bodyMedium, color = Accent)
         }
