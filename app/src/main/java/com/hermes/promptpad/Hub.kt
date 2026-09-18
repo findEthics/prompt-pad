@@ -147,8 +147,8 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
 /** Notifier's own tab row: 4 filter icons plus a to-do icon that opens To Do. */
 @Composable
 fun HubTabs(selected: Int, starredActive: Boolean, onSelect: (Int) -> Unit, onTodo: () -> Unit) {
-    // ponytail: emoji glyphs render at one fontSize; Starred gains a degree marker while non-empty.
-    val icons = mapOf("Calls" to "☎️", "Messages" to "💬", "All" to "All", "Starred" to "⭐", "to do" to "✅")
+    // ponytail: U+FE0E forces text (monochrome) presentation so the Text color tints them white.
+    val icons = mapOf("Calls" to "\u260E\uFE0E", "Messages" to "💬", "All" to "All", "Starred" to "\u2605", "to do" to "\u2611\uFE0E")
     val labels = HUB_FILTERS + "to do"
     Row(Modifier.fillMaxWidth()) {
         labels.forEachIndexed { i, l ->
@@ -163,7 +163,7 @@ fun HubTabs(selected: Int, starredActive: Boolean, onSelect: (Int) -> Unit, onTo
                     .clickable { if (isTodo) onTodo() else onSelect(i) }
                     .padding(horizontal = 2.dp, vertical = 8.dp),
                 fontSize = 18.sp,
-                color = if (isTodo) Accent else if (i == selected) Black else Dim,
+                color = if (!isTodo && i == selected) Black else White,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
             )
