@@ -49,8 +49,9 @@ class LogicTest {
         assertTrue(HubListener.shouldInclude(0))
     }
 
-    @Test fun hubHasNoAppsFilterAndUsesStarredLabel() {
-        assertEquals(listOf("All", "Messages", "Calls", "Emails", "Starred"), HUB_FILTERS)
+    @Test fun hubFiltersInterchangeCallsAndAllAndDropEmail() {
+        assertEquals(listOf("Calls", "Messages", "All", "Starred"), HUB_FILTERS)
+        assertEquals("All", HUB_FILTERS[2]) // default selection
     }
 
     @Test fun whatsappAndTelegramAreMessages() {

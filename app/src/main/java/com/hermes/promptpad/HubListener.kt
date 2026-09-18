@@ -12,7 +12,7 @@ import android.service.notification.StatusBarNotification
 import androidx.compose.runtime.mutableStateListOf
 
 
-enum class HubKind { MESSAGE, CALL, EMAIL, OTHER }
+enum class HubKind { MESSAGE, CALL, OTHER }
 
 data class HubItem(
     val key: String,
@@ -92,7 +92,6 @@ class HubListener : NotificationListenerService() {
 
         fun kindOf(pkg: String, n: Notification): HubKind = when {
             n.category == Notification.CATEGORY_CALL || n.category == Notification.CATEGORY_MISSED_CALL -> HubKind.CALL
-            n.category == Notification.CATEGORY_EMAIL || pkg.contains("mail") -> HubKind.EMAIL
             n.category == Notification.CATEGORY_MESSAGE || isMessagingPackage(pkg) -> HubKind.MESSAGE
             else -> HubKind.OTHER
         }
