@@ -30,6 +30,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 // Selectable filters. "All" is the default; emails have no category and fall under All.
 val HUB_FILTERS = listOf("Calls", "Messages", "All", "Starred")
@@ -99,7 +100,12 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
                             Text(if (item.starred) "★" else "☆",
                                 Modifier.clickable {
                                     val i = all.indexOfFirst { it.key == item.key }
-                                    if (i >= 0) all[i] = item.copy(starred = !item.starred)
+                                    if (i >= 0) {
+                                        val nowStarred = !item.starred
+                                        all[i] = item.copy(starred = nowStarred)
+                                        // Starring clears it from Android's tray but keeps it under Starred.
+                                        if (nowStarred) HubListener.dismiss(item.key)
+                                    }
                                 }.padding(start = 8.dp),
                                 style = MaterialTheme.typography.bodyMedium, color = Accent)
                         }
@@ -138,24 +144,25 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
     }
 }
 
-/** Notifier's own tab row: 4 filters plus a "to do" text button that opens To Do. */
+/** Notifier's own tab row: 4 filter icons plus a to-do icon that opens To Do. */
 @Composable
 fun HubTabs(selected: Int, starredActive: Boolean, onSelect: (Int) -> Unit, onTodo: () -> Unit) {
+    // ponytail: emoji glyphs render at one fontSize; Starred gains a degree marker while non-empty.
+    val icons = mapOf("Calls" to "☎️", "Messages" to "💬", "All" to "All", "Starred" to "⭐", "to do" to "✅")
     val labels = HUB_FILTERS + "to do"
     Row(Modifier.fillMaxWidth()) {
         labels.forEachIndexed { i, l ->
             val isTodo = l == "to do"
-            // Starred shows a weather-style degree marker while it holds anything.
-            val label = if (l == "Starred" && starredActive) "Starred°" else l
+            val glyph = (icons[l] ?: l) + if (l == "Starred" && starredActive) "°" else ""
             Text(
-                label,
+                glyph,
                 Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(8.dp))
                     .background(if (!isTodo && i == selected) Accent else Black)
                     .clickable { if (isTodo) onTodo() else onSelect(i) }
                     .padding(horizontal = 2.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.bodySmall,
+                fontSize = 18.sp,
                 color = if (isTodo) Accent else if (i == selected) Black else Dim,
                 textAlign = TextAlign.Center,
                 maxLines = 1,

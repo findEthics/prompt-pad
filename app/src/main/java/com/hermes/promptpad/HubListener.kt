@@ -43,7 +43,8 @@ class HubListener : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) = add(sbn)
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        items.removeAll { it.key == sbn.key }
+        // ponytail: keep starred items in-memory after we clear them from the tray.
+        items.removeAll { it.key == sbn.key && !it.starred }
     }
 
     private fun add(sbn: StatusBarNotification) {
