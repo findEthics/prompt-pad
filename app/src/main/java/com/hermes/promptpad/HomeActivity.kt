@@ -41,7 +41,7 @@ class HomeActivity : ComponentActivity() {
             MinimalTheme(prefs, preferenceVersion) {
                 var tick by remember { mutableIntStateOf(0) }
                 LaunchedEffect(Unit) { while (true) { delay(20_000); tick++ } }
-                val back = { screen = Screen.Home }
+                val back = { screen = homeScreen }
                 when (screen) {
                     Screen.Home -> HomeScreen(prefs, { screen = it }, tick)
                     Screen.Drawer -> DrawerScreen(prefs, pendingKey.orEmpty(), { pendingKey = null; back() }) {

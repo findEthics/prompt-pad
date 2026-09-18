@@ -3,7 +3,7 @@ package com.hermes.promptpad
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -55,16 +55,19 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
     val hasStarred = all.any { it.starred }
 
     val time = remember(tick) { java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date()) }
-    EdgeScreen("notifier", Modifier.pointerInput(Unit) {
-        var distance = 0f
-        detectHorizontalDragGestures(
-            onDragStart = { distance = 0f },
-            onHorizontalDrag = { _, dx -> distance += dx },
+    EdgeScreen("notifier", Modifier.pointerInput(prefs.notifierAsHome) {
+        var dx = 0f; var dy = 0f
+        detectDragGestures(
+            onDragStart = { dx = 0f; dy = 0f },
             onDragEnd = {
-                if (distance < -80.dp.toPx()) back()
-                else if (distance > 80.dp.toPx()) nav(Screen.Notes)
+                when {
+                    // notifier-as-home: it's the launcher home, so mirror Home's own gestures.
+                    prefs.notifierAsHome && dy < -120f && kotlin.math.abs(dy) > kotlin.math.abs(dx) -> nav(Screen.Drawer)
+                    dx > 80.dp.toPx() -> nav(Screen.Notes)
+                    dx < -80.dp.toPx() -> if (prefs.notifierAsHome) nav(Screen.Settings) else back()
+                }
             },
-        )
+        ) { _, delta -> dx += delta.x; dy += delta.y }
     },
     heading = if (prefs.notifierAsHome) ({
         Text(time, Modifier.fillMaxWidth(), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, color = Accent)
