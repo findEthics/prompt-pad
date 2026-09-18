@@ -9,6 +9,10 @@ class Prefs(ctx: Context) {
 
     var showWeather: Boolean by BoolPref(p, "showWeather", false)
     var showBattery: Boolean by BoolPref(p, "showBattery", true)
+    var showDate: Boolean by BoolPref(p, "showDate", true)
+    var showAgenda: Boolean by BoolPref(p, "showAgenda", true)
+    var showTodo: Boolean by BoolPref(p, "showTodo", true)
+    var notifierAsHome: Boolean by BoolPref(p, "notifierAsHome", false)
     var instructionsSeen: Boolean by BoolPref(p, "instructionsSeen", false)
     var peakRight: Boolean by BoolPref(p, "peakRight", false)
     var peakVariant: Int by IntPref(p, "peakVariant", 0)

@@ -75,16 +75,6 @@ fun NotesScreen() {
     val listState = rememberLazyListState()
     val visible = notes.filter { it.folder == Store.FOLDERS[folder] }
     EdgeScreen("notes") {
-        Tabs(Store.FOLDERS, folder) { folder = it }
-        Spacer(Modifier.height(Dim2.gap))
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("+ new note", Modifier.weight(1f).heightIn(min = Dim2.touch).clickable {
-                val n = Note(System.currentTimeMillis(), Store.FOLDERS[folder], "", "")
-                persist(notes + n); open = n.id
-            }.padding(vertical = 12.dp), style = MaterialTheme.typography.bodyMedium, color = Accent)
-            Text(if (reordering) "done" else "reorder", Modifier.heightIn(min = Dim2.touch)
-                .clickable { reordering = !reordering }.padding(vertical = 12.dp), style = MaterialTheme.typography.bodyMedium, color = Accent)
-        }
         LazyColumn(Modifier.weight(1f).orangeScrollbar(listState).padding(end = 6.dp),
             state = listState, verticalArrangement = Arrangement.spacedBy(6.dp)) {
             items(visible, key = { it.id }) { n ->
@@ -105,6 +95,16 @@ fun NotesScreen() {
                 }
             }
         }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("+ new note", Modifier.weight(1f).heightIn(min = Dim2.touch).clickable {
+                val n = Note(System.currentTimeMillis(), Store.FOLDERS[folder], "", "")
+                persist(notes + n); open = n.id
+            }.padding(vertical = 12.dp), style = MaterialTheme.typography.bodyMedium, color = Accent)
+            Text(if (reordering) "done" else "reorder", Modifier.heightIn(min = Dim2.touch)
+                .clickable { reordering = !reordering }.padding(vertical = 12.dp), style = MaterialTheme.typography.bodyMedium, color = Accent)
+        }
+        Spacer(Modifier.height(Dim2.gap))
+        Tabs(Store.FOLDERS, folder) { folder = it }
     }
 }
 

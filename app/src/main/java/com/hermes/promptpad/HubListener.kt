@@ -54,8 +54,13 @@ class HubListener : NotificationListenerService() {
         if (!shouldInclude(n.flags)) return
         val x = n.extras
         val title = x.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: return
-        val incoming = x.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
-            ?: x.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
+        // ponytail: MessagingStyle carries the tray's appended conversation; fall back to plain text.
+        val messages = androidx.core.app.NotificationCompat.MessagingStyle
+            .extractMessagingStyleFromNotification(n)?.messages
+            ?.mapNotNull { it.text?.toString() }?.filter { it.isNotBlank() }
+        val incoming = if (!messages.isNullOrEmpty()) messages.takeLast(8).joinToString("\n")
+            else x.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
+                ?: x.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
         val replies = previous?.replies.orEmpty()
         // ponytail: keep the conversation only while this system notification lives.
         val text = if (replies.isEmpty()) incoming else

@@ -78,7 +78,9 @@ fun HomeScreen(prefs: Prefs, nav: (Screen) -> Unit, tick: Int) {
             Spacer(Modifier.height(if (prefs.peakRight) 8.dp else 14.dp))
             PeakWidget(prefs, tick, nav, editing) { picking = it }
             Spacer(Modifier.height(16.dp))
-            GlanceRows(nav, tick, prefs.textScale)
+            if (prefs.showAgenda || prefs.showTodo) {
+                GlanceRows(nav, tick, prefs.textScale, prefs.showAgenda, prefs.showTodo)
+            }
             Spacer(Modifier.weight(1f))
             AppGrid(prefs, editing, nav) { picking = it }
             if (editing) {
@@ -149,16 +151,16 @@ fun PeakWidget(prefs: Prefs, tick: Int, nav: (Screen) -> Unit, editing: Boolean,
             1 -> {
                 val date = "${format("EEE")}, ${format("MMM d")}  ·  "
                 Row {
-                    Text(date, dateModifier, style = MaterialTheme.typography.headlineSmall)
+                    if (prefs.showDate) Text(date, dateModifier, style = MaterialTheme.typography.headlineSmall)
                     Text(format("HH:mm"), clockModifier, style = MaterialTheme.typography.headlineSmall, color = Accent)
                 }
             }
             2 -> {
                 Text(format("HH:mm"), clockModifier, style = MaterialTheme.typography.headlineSmall, color = Accent)
-                Text("${format("EEE")}, ${format("MMM d")}", dateModifier, style = MaterialTheme.typography.bodyMedium, color = Dim)
+                if (prefs.showDate) Text("${format("EEE")}, ${format("MMM d")}", dateModifier, style = MaterialTheme.typography.bodyMedium, color = Dim)
             }
             else -> {
-                Column(dateModifier) {
+                if (prefs.showDate) Column(dateModifier) {
                     Text("${format("EEE")},", style = MaterialTheme.typography.headlineSmall)
                     Text(format("MMM d"), style = MaterialTheme.typography.headlineSmall)
                 }
@@ -183,18 +185,18 @@ fun PeakWidget(prefs: Prefs, tick: Int, nav: (Screen) -> Unit, editing: Boolean,
 }
 
 @Composable
-fun GlanceRows(nav: (Screen) -> Unit, tick: Int, textScale: Int) {
+fun GlanceRows(nav: (Screen) -> Unit, tick: Int, textScale: Int, showAgenda: Boolean = true, showTodo: Boolean = true) {
     val ctx = LocalContext.current
     val event = remember(tick) { runCatching { Agenda.today(ctx).firstOrNull() }.getOrNull() }
     val open = remember(tick) { Store(ctx).tasks().filter { !it.done } }
     Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-        GlanceRow(
+        if (showAgenda) GlanceRow(
             Icons.Outlined.CalendarToday,
             event?.let { "${it.title.lowercase()} · ${Agenda.when_(it).substringAfter("· ")}" } ?: "no events today",
             null,
             textScale = textScale,
         ) { nav(Screen.Agenda) }
-        GlanceRow(
+        if (showTodo) GlanceRow(
             Icons.AutoMirrored.Outlined.FormatListBulleted,
             open.firstOrNull()?.text ?: "no open tasks",
             if (open.size > 1) open.size else null,

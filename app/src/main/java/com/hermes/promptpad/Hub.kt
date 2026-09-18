@@ -29,7 +29,7 @@ val HUB_FILTERS = listOf("All", "Messages", "Calls", "Emails", "Starred")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HubScreen(back: () -> Unit) {
+fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit) {
     val ctx = LocalContext.current
     var filter by remember { mutableIntStateOf(0) }
     var replyingTo by remember { mutableStateOf<String?>(null) }
@@ -44,6 +44,7 @@ fun HubScreen(back: () -> Unit) {
         }
     }
 
+    val time = remember(tick) { java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date()) }
     EdgeScreen("notifier", Modifier.pointerInput(Unit) {
         var distance = 0f
         detectHorizontalDragGestures(
@@ -51,9 +52,9 @@ fun HubScreen(back: () -> Unit) {
             onHorizontalDrag = { _, dx -> distance += dx },
             onDragEnd = { if (distance < -80.dp.toPx()) back() },
         )
-    }) {
-        Tabs(HUB_FILTERS, filter) { filter = it }
-        Spacer(Modifier.height(Dim2.gap))
+    }, topRight = if (prefs.notifierAsHome) ({
+        Text(time, style = MaterialTheme.typography.bodyMedium, color = Accent)
+    }) else null) {
         if (!HubListener.isEnabled(ctx)) {
             Card(Modifier.fillMaxWidth(), onClick = { HubListener.openSettings(ctx) }) {
                 Text("Grant notification access", style = MaterialTheme.typography.bodyMedium, color = Accent)
@@ -62,7 +63,7 @@ fun HubScreen(back: () -> Unit) {
             }
             Spacer(Modifier.height(Dim2.gap))
         }
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             items(shown, key = { it.key }) { item ->
                 val dismissState = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
                     if (value == SwipeToDismissBoxValue.Settled) true
@@ -116,5 +117,7 @@ fun HubScreen(back: () -> Unit) {
                 }
             }
         }
+        Spacer(Modifier.height(Dim2.gap))
+        Tabs(HUB_FILTERS, filter) { filter = it }
     }
 }

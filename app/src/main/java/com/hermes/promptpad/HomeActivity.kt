@@ -21,15 +21,16 @@ class HomeActivity : ComponentActivity() {
     private lateinit var prefs: Prefs
     private var pendingKey: String? by mutableStateOf(null)
     private var screen: Screen by mutableStateOf(Screen.Home)
+    private val homeScreen: Screen get() = if (prefs.notifierAsHome && prefs.notifierEnabled) Screen.Hub else Screen.Home
     private val calendarPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
-        if (!prefs.instructionsSeen) screen = Screen.Instructions
+        if (!prefs.instructionsSeen) screen = Screen.Instructions else screen = homeScreen
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (screen != Screen.Home && screen != Screen.Instructions) { pendingKey = null; screen = Screen.Home }
+                if (screen != homeScreen && screen != Screen.Instructions) { pendingKey = null; screen = homeScreen }
             }
         })
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -47,7 +48,7 @@ class HomeActivity : ComponentActivity() {
                         pendingKey = null
                         screen = Screen.Settings
                     }
-                    Screen.Hub -> HubScreen(back)
+                    Screen.Hub -> HubScreen(prefs, tick, back)
                     Screen.Settings -> SettingsScreen(
                         prefs,
                         back,
@@ -69,7 +70,7 @@ class HomeActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         pendingKey = null
-        screen = if (prefs.instructionsSeen) Screen.Home else Screen.Instructions
+        screen = if (prefs.instructionsSeen) homeScreen else Screen.Instructions
     }
 
     override fun onResume() {
