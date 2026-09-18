@@ -37,8 +37,12 @@ fun SettingsScreen(
         key(version) {
             Section("appearance")
             Toggle("battery in peak widget", prefs.showBattery) { update { prefs.showBattery = it } }
+            Toggle("date in peak widget", prefs.showDate) { update { prefs.showDate = it } }
             Toggle("weather in peak widget", prefs.showWeather) { update { prefs.showWeather = it } }
             if (prefs.showWeather) WeatherLocationSetting(prefs) { update {} }
+            Toggle("agenda on home", prefs.showAgenda) { update { prefs.showAgenda = it } }
+            Toggle("to-do on home", prefs.showTodo) { update { prefs.showTodo = it } }
+            Toggle("open notifier as home", prefs.notifierAsHome) { update { prefs.notifierAsHome = it } }
             Toggle("peak widget right-aligned", prefs.peakRight) { update { prefs.peakRight = it } }
             Choice("peak variant", listOf("time+date", "one line", "stacked"), prefs.peakVariant) { update { prefs.peakVariant = it } }
             Choice(

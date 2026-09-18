@@ -108,7 +108,7 @@ fun Header(text: String, back: (() -> Unit)? = null, center: Boolean = false) {
 }
 
 @Composable
-fun EdgeScreen(title: String, modifier: Modifier = Modifier, heading: (@Composable () -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+fun EdgeScreen(title: String, modifier: Modifier = Modifier, heading: (@Composable () -> Unit)? = null, topRight: (@Composable () -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
     Box(modifier.fillMaxSize().background(Black)) {
         Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = Dim2.screen)) {
             Spacer(Modifier.height(Dim2.touch))
@@ -120,6 +120,8 @@ fun EdgeScreen(title: String, modifier: Modifier = Modifier, heading: (@Composab
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
             )
+            // ponytail: right-inset by cutoutLeft mirrors the date's curved-edge padding.
+            if (topRight != null) Box(Modifier.align(Alignment.CenterEnd).padding(end = Dim2.cutoutLeft)) { topRight() }
         }
     }
 }
