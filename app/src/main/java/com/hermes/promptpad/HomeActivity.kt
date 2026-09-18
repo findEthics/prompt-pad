@@ -48,7 +48,7 @@ class HomeActivity : ComponentActivity() {
                         pendingKey = null
                         screen = Screen.Settings
                     }
-                    Screen.Hub -> HubScreen(prefs, tick, back)
+                    Screen.Hub -> HubScreen(prefs, tick, back) { screen = it }
                     Screen.Settings -> SettingsScreen(
                         prefs,
                         back,
