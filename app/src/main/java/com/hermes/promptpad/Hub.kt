@@ -1,7 +1,6 @@
 package com.hermes.promptpad
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -12,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.automirrored.outlined.Reply
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -56,7 +54,6 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
     val hasStarred = all.any { it.starred }
 
     val time = remember(tick) { java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date()) }
-    val date = remember(tick) { java.text.SimpleDateFormat("EEE, MMM d", java.util.Locale.getDefault()).format(java.util.Date()).lowercase() }
     EdgeScreen("notifier", Modifier.pointerInput(Unit) {
         var distance = 0f
         detectHorizontalDragGestures(
@@ -69,10 +66,7 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
         )
     },
     heading = if (prefs.notifierAsHome) ({
-        Text(date, Modifier.fillMaxWidth(), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-    }) else null,
-    topRight = if (prefs.notifierAsHome) ({
-        Text(time, style = MaterialTheme.typography.bodyMedium, color = Accent)
+        Text(time, Modifier.fillMaxWidth(), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, color = Accent)
     }) else null) {
         if (!HubListener.isEnabled(ctx)) {
             Card(Modifier.fillMaxWidth(), onClick = { HubListener.openSettings(ctx) }) {
@@ -144,34 +138,28 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
     }
 }
 
-/** Notifier's own tab row: 4 filters plus a checklist button that opens To Do. */
+/** Notifier's own tab row: 4 filters plus a "to do" text button that opens To Do. */
 @Composable
 fun HubTabs(selected: Int, starredActive: Boolean, onSelect: (Int) -> Unit, onTodo: () -> Unit) {
+    val labels = HUB_FILTERS + "to do"
     Row(Modifier.fillMaxWidth()) {
-        HUB_FILTERS.forEachIndexed { i, l ->
-            // Starred gains an edit-mode-style orange border while it holds anything.
-            val border = if (l == "Starred" && starredActive)
-                Modifier.border(2.dp, Accent, RoundedCornerShape(8.dp)) else Modifier
+        labels.forEachIndexed { i, l ->
+            val isTodo = l == "to do"
+            // Starred shows a weather-style degree marker while it holds anything.
+            val label = if (l == "Starred" && starredActive) "Starred°" else l
             Text(
-                l,
+                label,
                 Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(if (i == selected) Accent else Black)
-                    .then(border)
-                    .clickable { onSelect(i) }
+                    .background(if (!isTodo && i == selected) Accent else Black)
+                    .clickable { if (isTodo) onTodo() else onSelect(i) }
                     .padding(horizontal = 2.dp, vertical = 8.dp),
                 style = MaterialTheme.typography.bodySmall,
-                color = if (i == selected) Black else Dim,
+                color = if (isTodo) Accent else if (i == selected) Black else Dim,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
             )
-        }
-        Box(
-            Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable { onTodo() }.padding(vertical = 8.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.AutoMirrored.Outlined.FormatListBulleted, "To Do", tint = Accent, modifier = Modifier.size(18.dp))
         }
     }
 }
