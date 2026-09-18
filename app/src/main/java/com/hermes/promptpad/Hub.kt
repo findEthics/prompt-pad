@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -68,6 +69,9 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
                 }
             },
         ) { _, delta -> dx += delta.x; dy += delta.y }
+    }.pointerInput(prefs.tapToSleep) {
+        // Notifier-as-home mirrors Home's double-tap-to-sleep. Cards consume their own taps.
+        detectTapGestures(onDoubleTap = { if (prefs.tapToSleep) TapToSleepAccessibilityService.lockScreen() })
     },
     heading = if (prefs.notifierAsHome) ({
         Text(time, Modifier.fillMaxWidth(), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, color = Accent)
@@ -80,7 +84,9 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
             }
             Spacer(Modifier.height(Dim2.gap))
         }
-        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Box keeps tabs pinned bottom; a short list wraps at top, leaving empty space to the root's swipe/tap gestures.
+        Box(Modifier.weight(1f)) {
+        LazyColumn(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             items(shown, key = { it.key }) { item ->
                 val dismissState = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
                     if (value == SwipeToDismissBoxValue.Settled) true
@@ -141,6 +147,7 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
                     }
                 }
             }
+        }
         }
         Spacer(Modifier.height(Dim2.gap))
         HubTabs(filter, hasStarred, { filter = it }) { nav(Screen.Todo) }
