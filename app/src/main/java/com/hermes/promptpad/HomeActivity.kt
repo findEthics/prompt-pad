@@ -56,7 +56,7 @@ class HomeActivity : ComponentActivity() {
                         ::applyStatusBar,
                     ) { preferenceVersion++ }
                     Screen.Notes -> NotesScreen()
-                    Screen.Todo -> TodoScreen(back)
+                    Screen.Todo -> TodoScreen { screen = homeScreen }
                     Screen.Agenda -> AgendaScreen { calendarPermission.launch(Manifest.permission.READ_CALENDAR) }
                     Screen.Instructions -> InstructionsScreen {
                         prefs.instructionsSeen = true
