@@ -11,6 +11,9 @@ class LogicTest {
     @Test fun mediaWidgetShowsOnlyPlayingOrPaused() {
         assertTrue(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_PLAYING))
         assertTrue(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_PAUSED))
+        // transient states during a skip must still count as live so the widget doesn't drop
+        assertTrue(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_BUFFERING))
+        assertTrue(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_CONNECTING))
         assertFalse(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_STOPPED))
         assertFalse(MediaWidget.isActiveState(null))
     }
