@@ -234,6 +234,10 @@ fun launchShortcut(ctx: Context, spec: String, nav: (Screen) -> Unit) {
     Apps.launch(ctx, spec)
 }
 
+/** Human label for a shortcut spec (built-in name or installed app label), for Settings display. */
+fun shortcutLabel(ctx: Context, spec: String): String =
+    NATIVE[spec]?.label ?: SYSTEM[spec]?.first ?: Apps.fromSpec(ctx, spec)?.label ?: spec
+
 private val NATIVE = mapOf(
     "promptpad:notes" to Native(Screen.Notes, "Note", Icons.Outlined.Description),
     "promptpad:agenda" to Native(Screen.Agenda, "Event", Icons.Outlined.CalendarToday),
