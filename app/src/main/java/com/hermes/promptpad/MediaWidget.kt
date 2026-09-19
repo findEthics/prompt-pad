@@ -42,19 +42,16 @@ object MediaWidget {
     }
 
     private fun pick(controllers: List<MediaController>?) {
-        val list = controllers.orEmpty()
-        // ponytail: keep the controller we're already showing if it's still around, so a track skip's
-        // transient BUFFERING/CONNECTING (which momentarily reports no "active" session) doesn't drop the widget.
-        val current = controller?.let { cur -> list.firstOrNull { it.sessionToken == cur.sessionToken } }
-        val active = current ?: list.firstOrNull { isActiveState(it.playbackState?.state) }
+        // Only show the widget while something is actually playing (buffering/connecting = mid-play, keep).
+        val active = controllers.orEmpty().firstOrNull { isPlaying(it.playbackState?.state) }
         if (active == null) { unwatch(); state.value = null; return }
         watch(active)
         update(active)
     }
 
-    // ponytail: playing/paused/buffering/connecting all count as a live session worth showing.
-    fun isActiveState(s: Int?) = s == PlaybackState.STATE_PLAYING || s == PlaybackState.STATE_PAUSED ||
-        s == PlaybackState.STATE_BUFFERING || s == PlaybackState.STATE_CONNECTING
+    // ponytail: playing (or the brief buffering/connecting during a skip) shows the widget; paused/stopped hides it.
+    fun isPlaying(s: Int?) = s == PlaybackState.STATE_PLAYING || s == PlaybackState.STATE_BUFFERING ||
+        s == PlaybackState.STATE_CONNECTING
 
     private fun watch(c: MediaController) {
         if (controller?.sessionToken == c.sessionToken) return
@@ -62,7 +59,8 @@ object MediaWidget {
         val cb = object : MediaController.Callback() {
             override fun onMetadataChanged(m: android.media.MediaMetadata?) = update(c)
             override fun onPlaybackStateChanged(s: PlaybackState?) {
-                if (s?.state == PlaybackState.STATE_STOPPED) state.value = null else update(c)
+                // Pause/stop clears the widget (lets the app's dismissible notification return); resume re-shows it.
+                if (isPlaying(s?.state)) update(c) else state.value = null
             }
             override fun onSessionDestroyed() { state.value = null }
         }

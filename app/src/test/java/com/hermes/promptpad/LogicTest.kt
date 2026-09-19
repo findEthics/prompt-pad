@@ -8,14 +8,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LogicTest {
-    @Test fun mediaWidgetShowsOnlyPlayingOrPaused() {
-        assertTrue(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_PLAYING))
-        assertTrue(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_PAUSED))
-        // transient states during a skip must still count as live so the widget doesn't drop
-        assertTrue(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_BUFFERING))
-        assertTrue(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_CONNECTING))
-        assertFalse(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_STOPPED))
-        assertFalse(MediaWidget.isActiveState(null))
+    @Test fun mediaWidgetShowsOnlyWhilePlaying() {
+        assertTrue(MediaWidget.isPlaying(android.media.session.PlaybackState.STATE_PLAYING))
+        // transient states during a skip still count as playing so the widget doesn't flicker away
+        assertTrue(MediaWidget.isPlaying(android.media.session.PlaybackState.STATE_BUFFERING))
+        assertTrue(MediaWidget.isPlaying(android.media.session.PlaybackState.STATE_CONNECTING))
+        // paused/stopped hide it so the app's own dismissible notification returns
+        assertFalse(MediaWidget.isPlaying(android.media.session.PlaybackState.STATE_PAUSED))
+        assertFalse(MediaWidget.isPlaying(android.media.session.PlaybackState.STATE_STOPPED))
+        assertFalse(MediaWidget.isPlaying(null))
     }
 
     @Test fun drawerStaysEmptyUntilSearched() {

@@ -43,7 +43,7 @@ fun SettingsScreen(
             Toggle("agenda on home", prefs.showAgenda) { update { prefs.showAgenda = it } }
             Toggle("to-do on home", prefs.showTodo) { update { prefs.showTodo = it } }
             Toggle("open notifier as home", prefs.notifierAsHome) { update { prefs.notifierAsHome = it } }
-            if (prefs.notifierAsHome) NotifierLeftAppSetting(prefs) { update {} }
+            NotifierLeftAppSetting(prefs) { update {} }
             Toggle("peak widget right-aligned", prefs.peakRight) { update { prefs.peakRight = it } }
             Choice("peak variant", listOf("time+date", "one line", "stacked"), prefs.peakVariant) { update { prefs.peakVariant = it } }
             Choice(
