@@ -23,6 +23,7 @@ object MediaWidget {
     private var callback: MediaController.Callback? = null
 
     fun start(ctx: Context, component: ComponentName) {
+        if (manager != null) return  // already running (guard against double start from service + UI)
         val m = ctx.getSystemService(Context.MEDIA_SESSION_SERVICE) as? MediaSessionManager ?: return
         manager = m
         val l = MediaSessionManager.OnActiveSessionsChangedListener { pick(it) }

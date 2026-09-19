@@ -64,6 +64,8 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
     }
 
     val time = remember(tick) { java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date()) }
+    // Also start media polling from the UI: onListenerConnected may not re-fire after an app update.
+    LaunchedEffect(Unit) { MediaWidget.start(ctx, android.content.ComponentName(ctx, HubListener::class.java)) }
     EdgeScreen("notifier", Modifier.pointerInput(prefs.notifierAsHome) {
         var dx = 0f; var dy = 0f
         detectDragGestures(
