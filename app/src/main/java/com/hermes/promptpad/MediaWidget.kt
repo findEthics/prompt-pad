@@ -42,14 +42,19 @@ object MediaWidget {
     }
 
     private fun pick(controllers: List<MediaController>?) {
-        val active = controllers?.firstOrNull { isActiveState(it.playbackState?.state) }
+        val list = controllers.orEmpty()
+        // ponytail: keep the controller we're already showing if it's still around, so a track skip's
+        // transient BUFFERING/CONNECTING (which momentarily reports no "active" session) doesn't drop the widget.
+        val current = controller?.let { cur -> list.firstOrNull { it.sessionToken == cur.sessionToken } }
+        val active = current ?: list.firstOrNull { isActiveState(it.playbackState?.state) }
         if (active == null) { unwatch(); state.value = null; return }
         watch(active)
         update(active)
     }
 
-    // ponytail: playing or paused counts as an active session worth showing; everything else hides it.
-    fun isActiveState(s: Int?) = s == PlaybackState.STATE_PLAYING || s == PlaybackState.STATE_PAUSED
+    // ponytail: playing/paused/buffering/connecting all count as a live session worth showing.
+    fun isActiveState(s: Int?) = s == PlaybackState.STATE_PLAYING || s == PlaybackState.STATE_PAUSED ||
+        s == PlaybackState.STATE_BUFFERING || s == PlaybackState.STATE_CONNECTING
 
     private fun watch(c: MediaController) {
         if (controller?.sessionToken == c.sessionToken) return
