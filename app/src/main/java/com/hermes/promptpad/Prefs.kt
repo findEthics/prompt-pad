@@ -13,7 +13,7 @@ class Prefs(ctx: Context) {
     var showAgenda: Boolean by BoolPref(p, "showAgenda", true)
     var showTodo: Boolean by BoolPref(p, "showTodo", true)
     var notifierAsHome: Boolean by BoolPref(p, "notifierAsHome", false)
-    var instructionsSeen: Boolean by BoolPref(p, "instructionsSeen", false)
+    var instructionsSeenVer: Int by IntPref(p, "instructionsSeenVer", 0)
     var peakRight: Boolean by BoolPref(p, "peakRight", false)
     var peakVariant: Int by IntPref(p, "peakVariant", 0)
     var textScale: Int by IntPref(p, "textScale", 100)
@@ -29,6 +29,10 @@ class Prefs(ctx: Context) {
     var clockApp: String
         get() = p.getString("clockApp", "promptpad:clock")!!
         set(value) = p.edit().putString("clockApp", value).apply()
+
+    var notifierLeftApp: String
+        get() = p.getString("notifierLeftApp", "").orEmpty()
+        set(value) = p.edit().putString("notifierLeftApp", value).apply()
 
     val weatherLabel: String get() = p.getString("weatherLabel", "").orEmpty()
     val weatherLatitude: Double? get() = p.getString("weatherLatitude", null)?.toDoubleOrNull()

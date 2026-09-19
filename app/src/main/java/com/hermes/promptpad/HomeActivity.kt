@@ -17,6 +17,9 @@ import kotlinx.coroutines.delay
 
 enum class Screen { Home, Drawer, Hub, Settings, Notes, Todo, Agenda, Instructions }
 
+// ponytail: bump when the instructions text changes; users below this see them once more.
+const val INSTRUCTIONS_VERSION = 2
+
 class HomeActivity : ComponentActivity() {
     private lateinit var prefs: Prefs
     private var pendingKey: String? by mutableStateOf(null)
@@ -27,7 +30,7 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
-        if (!prefs.instructionsSeen) screen = Screen.Instructions else screen = homeScreen
+        if (prefs.instructionsSeenVer < INSTRUCTIONS_VERSION) screen = Screen.Instructions else screen = homeScreen
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (screen != homeScreen && screen != Screen.Instructions) { pendingKey = null; screen = homeScreen }
@@ -59,8 +62,8 @@ class HomeActivity : ComponentActivity() {
                     Screen.Todo -> TodoScreen { screen = homeScreen }
                     Screen.Agenda -> AgendaScreen { calendarPermission.launch(Manifest.permission.READ_CALENDAR) }
                     Screen.Instructions -> InstructionsScreen {
-                        prefs.instructionsSeen = true
-                        screen = Screen.Home
+                        prefs.instructionsSeenVer = INSTRUCTIONS_VERSION
+                        screen = homeScreen
                     }
                 }
             }
@@ -70,7 +73,7 @@ class HomeActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         pendingKey = null
-        screen = if (prefs.instructionsSeen) homeScreen else Screen.Instructions
+        screen = if (prefs.instructionsSeenVer >= INSTRUCTIONS_VERSION) homeScreen else Screen.Instructions
     }
 
     override fun onResume() {

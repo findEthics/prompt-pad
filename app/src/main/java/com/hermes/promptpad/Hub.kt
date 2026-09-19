@@ -13,6 +13,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Reply
+import androidx.compose.material.icons.outlined.Call
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,6 +58,10 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
         }
     }
     val hasStarred = all.any { it.starred }
+    var pickLeftApp by remember { mutableStateOf(false) }
+    val leftSwipe = {
+        if (prefs.notifierLeftApp.isBlank()) pickLeftApp = true else launchShortcut(ctx, prefs.notifierLeftApp, nav)
+    }
 
     val time = remember(tick) { java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date()) }
     EdgeScreen("notifier", Modifier.pointerInput(prefs.notifierAsHome) {
@@ -65,7 +73,7 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
                     // notifier-as-home: it's the launcher home, so mirror Home's own gestures.
                     prefs.notifierAsHome && dy < -120f && kotlin.math.abs(dy) > kotlin.math.abs(dx) -> nav(Screen.Drawer)
                     dx > 80.dp.toPx() -> nav(Screen.Notes)
-                    dx < -80.dp.toPx() -> if (prefs.notifierAsHome) nav(Screen.Settings) else back()
+                    dx < -80.dp.toPx() -> if (prefs.notifierAsHome) leftSwipe() else back()
                 }
             },
         ) { _, delta -> dx += delta.x; dy += delta.y }
@@ -81,6 +89,22 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
                 Text("Grant notification access", style = MaterialTheme.typography.bodyMedium, color = Accent)
                 Text("Prompt-Pad needs it to collect messages, calls and alerts here.",
                     style = MaterialTheme.typography.bodySmall, color = Dim)
+            }
+            Spacer(Modifier.height(Dim2.gap))
+        }
+        // Media widget pinned above the list whenever audio is active (its own notification is hidden).
+        val media = MediaWidget.state.value
+        if (media != null) {
+            Card(Modifier.fillMaxWidth(), onClick = { MediaWidget.open(ctx) }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(media.title ?: "Playing", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (!media.artist.isNullOrBlank()) Text(media.artist, style = MaterialTheme.typography.bodySmall, color = Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Text("⏮", Modifier.clickable { MediaWidget.prev() }.padding(8.dp), fontSize = 18.sp, color = Accent)
+                    Text(if (media.playing) "⏸" else "▶", Modifier.clickable { MediaWidget.playPause() }.padding(8.dp), fontSize = 18.sp, color = Accent)
+                    Text("⏭", Modifier.clickable { MediaWidget.next() }.padding(8.dp), fontSize = 18.sp, color = Accent)
+                }
             }
             Spacer(Modifier.height(Dim2.gap))
         }
@@ -152,31 +176,43 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
         Spacer(Modifier.height(Dim2.gap))
         HubTabs(filter, hasStarred, { filter = it }) { nav(Screen.Todo) }
     }
+    if (pickLeftApp) AppPicker(onPick = { prefs.notifierLeftApp = it; pickLeftApp = false; launchShortcut(ctx, it, nav) }, onDismiss = { pickLeftApp = false })
 }
 
 /** Notifier's own tab row: 4 filter icons plus a to-do icon that opens To Do. */
 @Composable
 fun HubTabs(selected: Int, starredActive: Boolean, onSelect: (Int) -> Unit, onTodo: () -> Unit) {
-    // ponytail: U+FE0E forces text (monochrome) presentation so the Text color tints them white.
-    val icons = mapOf("Calls" to "\u260E\uFE0E", "Messages" to "💬", "All" to "All", "Starred" to "\u2605", "to do" to "\u2611\uFE0E")
+    // Material vectors always tint white regardless of device fonts; "All" stays text.
+    val icons = mapOf(
+        "Calls" to Icons.Outlined.Call,
+        "Messages" to Icons.Outlined.ChatBubbleOutline,
+        "Starred" to Icons.Outlined.StarOutline,
+        "to do" to Icons.Outlined.CheckBox,
+    )
     val labels = HUB_FILTERS + "to do"
-    Row(Modifier.fillMaxWidth()) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         labels.forEachIndexed { i, l ->
             val isTodo = l == "to do"
-            val glyph = (icons[l] ?: l) + if (l == "Starred" && starredActive) "°" else ""
-            Text(
-                glyph,
-                Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (!isTodo && i == selected) Accent else Black)
-                    .clickable { if (isTodo) onTodo() else onSelect(i) }
-                    .padding(horizontal = 2.dp, vertical = 8.dp),
-                fontSize = 18.sp,
-                color = if (!isTodo && i == selected) Black else White,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-            )
+            val active = !isTodo && i == selected
+            val tint = if (active) Black else White
+            val cell = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(8.dp))
+                .background(if (active) Accent else Black)
+                .clickable { if (isTodo) onTodo() else onSelect(i) }
+                .padding(horizontal = 2.dp, vertical = 8.dp)
+            val icon = icons[l]
+            if (icon != null) {
+                Box(cell, contentAlignment = Alignment.Center) {
+                    Row(verticalAlignment = Alignment.Top) {
+                        Icon(icon, l, Modifier.size(22.dp), tint = tint)
+                        // Degree marker flags a non-empty Starred tray (mirrors the weather temp cue).
+                        if (l == "Starred" && starredActive) Text("°", fontSize = 18.sp, color = tint)
+                    }
+                }
+            } else {
+                Text(l, cell, fontSize = 18.sp, color = tint, textAlign = TextAlign.Center, maxLines = 1)
+            }
         }
     }
 }

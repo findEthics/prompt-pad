@@ -1,6 +1,7 @@
 package com.hermes.promptpad
 
 import android.app.ActivityOptions
+import android.content.ComponentName
 import android.os.Build
 import android.app.Notification
 import android.app.PendingIntent
@@ -32,12 +33,14 @@ class HubListener : NotificationListenerService() {
 
     override fun onListenerConnected() {
         listener = this
+        MediaWidget.start(this, ComponentName(this, HubListener::class.java))
         items.clear()
         activeNotifications?.forEach { add(it) }
     }
 
     override fun onListenerDisconnected() {
         if (listener === this) listener = null
+        MediaWidget.stop()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) = add(sbn)
@@ -49,6 +52,8 @@ class HubListener : NotificationListenerService() {
 
     private fun add(sbn: StatusBarNotification) {
         if (sbn.packageName == packageName) return
+        // ponytail: the playing app's media notification is surfaced by the MediaWidget instead.
+        if (sbn.packageName == MediaWidget.state.value?.pkg) return
         val n = sbn.notification
         val previous = items.firstOrNull { it.key == sbn.key }
         items.removeAll { it.key == sbn.key }
