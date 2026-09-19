@@ -43,6 +43,7 @@ fun SettingsScreen(
             Toggle("agenda on home", prefs.showAgenda) { update { prefs.showAgenda = it } }
             Toggle("to-do on home", prefs.showTodo) { update { prefs.showTodo = it } }
             Toggle("open notifier as home", prefs.notifierAsHome) { update { prefs.notifierAsHome = it } }
+            if (prefs.notifierAsHome) NotifierLeftAppSetting(prefs) { update {} }
             Toggle("peak widget right-aligned", prefs.peakRight) { update { prefs.peakRight = it } }
             Choice("peak variant", listOf("time+date", "one line", "stacked"), prefs.peakVariant) { update { prefs.peakVariant = it } }
             Choice(
@@ -125,6 +126,18 @@ private fun WeatherLocationSetting(prefs: Prefs, onChanged: () -> Unit) {
             scope.launch { Weather.current(prefs) }
         }) { Text(location.label, style = MaterialTheme.typography.bodySmall) }
     }
+}
+
+@Composable
+private fun NotifierLeftAppSetting(prefs: Prefs, onChanged: () -> Unit) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var picking by remember { mutableStateOf(false) }
+    val current = if (prefs.notifierLeftApp.isBlank()) "not set" else shortcutLabel(ctx, prefs.notifierLeftApp)
+    Row48({ picking = true }) {
+        Text("left-swipe app", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+        Text(current, style = MaterialTheme.typography.bodySmall, color = Accent)
+    }
+    if (picking) AppPicker(onPick = { prefs.notifierLeftApp = it; picking = false; onChanged() }, onDismiss = { picking = false })
 }
 
 @Composable
