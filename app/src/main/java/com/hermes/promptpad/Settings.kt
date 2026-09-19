@@ -79,6 +79,9 @@ fun SettingsScreen(
             Text("Forecast adapted for compact display.",
                 Modifier.padding(bottom = 12.dp),
                 style = MaterialTheme.typography.labelSmall, color = DotIdle)
+            Text("prompt-pad ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                Modifier.padding(bottom = 12.dp),
+                style = MaterialTheme.typography.labelSmall, color = DotIdle)
         }
     }
 }
