@@ -227,6 +227,13 @@ private fun GlanceRow(icon: ImageVector, text: String, badge: Int?, textScale: I
 
 private data class Native(val screen: Screen, val label: String, val icon: ImageVector)
 
+/** Route a shortcut spec the same way Home tiles do: native screen, system action, or app launch. */
+fun launchShortcut(ctx: Context, spec: String, nav: (Screen) -> Unit) {
+    NATIVE[spec]?.let { nav(it.screen); return }
+    SYSTEM[spec]?.let { Apps.launchAction(ctx, it.third); return }
+    Apps.launch(ctx, spec)
+}
+
 private val NATIVE = mapOf(
     "promptpad:notes" to Native(Screen.Notes, "Note", Icons.Outlined.Description),
     "promptpad:agenda" to Native(Screen.Agenda, "Event", Icons.Outlined.CalendarToday),
@@ -244,7 +251,7 @@ private val NATIVE_KATAPULT_ICONS = mapOf(
 
 val DEFAULT_TILES = listOf("promptpad:notes", "promptpad:agenda", "promptpad:clock", "promptpad:todo")
 
-private val SYSTEM = mapOf(
+internal val SYSTEM = mapOf(
     "promptpad:calendar" to Triple("Calendar", Icons.Outlined.CalendarToday, "android.intent.action.MAIN|android.intent.category.APP_CALENDAR"),
     "promptpad:clock" to Triple("Clock", Icons.Outlined.Timer, "android.intent.action.SHOW_ALARMS"),
     "promptpad:phone" to Triple("Call", Icons.Outlined.Call, "android.intent.action.DIAL"),

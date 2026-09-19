@@ -8,6 +8,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LogicTest {
+    @Test fun mediaWidgetShowsOnlyPlayingOrPaused() {
+        assertTrue(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_PLAYING))
+        assertTrue(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_PAUSED))
+        assertFalse(MediaWidget.isActiveState(android.media.session.PlaybackState.STATE_STOPPED))
+        assertFalse(MediaWidget.isActiveState(null))
+    }
+
     @Test fun drawerStaysEmptyUntilSearched() {
         val apps = listOf("Telegram", "Settings", "Tetris").map { AppEntry(it, it, it, 0, null) }
         assertEquals(listOf("Telegram", "Tetris"), Apps.search(apps, "te").map { it.label })

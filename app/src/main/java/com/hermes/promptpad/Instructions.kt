@@ -28,10 +28,10 @@ fun InstructionsScreen(done: () -> Unit) {
             }
         }
         Spacer(Modifier.height(28.dp))
-        Instruction("Edit Home", "Long-press a blank area, then tap the date, clock, weather or an icon to replace its shortcut. Tap weather to choose an app the first time. Long-press again to leave edit mode.")
-        Instruction("Launcher settings", "Swipe left on the Home screen, or tap the settings symbol in app search.")
-        Instruction("Notifier", "On by default; toggle notifier in Settings. Swipe right on Home to open it, then left on a blank area to return. Grant notification access when prompted.")
-        Instruction("Apps", "Swipe up or start typing on the physical keyboard to search.")
+        Instruction("Home", "Long-press a blank area to edit, then tap a tile to swap its shortcut. Swipe left for Settings, swipe up for apps.")
+        Instruction("Notifier", "Swipe right on Home to open it (on by default). Grant notification access when asked. Reply, star, or swipe a notification away; music shows on top while playing.")
+        Instruction("Notifier as home", "Optional in Settings: the Notifier becomes Home — swipe up for apps, swipe left to open your chosen app, double-tap to sleep.")
+        Instruction("Apps", "Swipe up or type on the keyboard to search.")
         Spacer(Modifier.weight(1f))
         Text(
             "start",
