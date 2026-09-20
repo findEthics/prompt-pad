@@ -34,6 +34,7 @@ class HubListener : NotificationListenerService() {
     override fun onListenerConnected() {
         listener = this
         MediaWidget.start(this, ComponentName(this, HubListener::class.java))
+        replySenders.clear()
         items.clear()
         activeNotifications?.forEach { add(it) }
     }
@@ -46,8 +47,8 @@ class HubListener : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) = add(sbn)
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        // Keep only removals explicitly caused by starring; every clear removes the card.
-        if (!retained.remove(sbn.key)) items.removeAll { it.key == sbn.key }
+        // A direct reply can briefly withdraw the old card before reposting it as "You".
+        if (!retained.remove(sbn.key) && sbn.key !in replySenders) items.removeAll { it.key == sbn.key }
     }
 
     private fun add(sbn: StatusBarNotification) {
@@ -58,13 +59,16 @@ class HubListener : NotificationListenerService() {
             return
         }
         val n = sbn.notification
-        val previous = items.firstOrNull { it.key == sbn.key }
-        items.removeAll { it.key == sbn.key }
-        if (!shouldInclude(n.flags)) return
+        val previousIndex = items.indexOfFirst { it.key == sbn.key }
+        val previous = items.getOrNull(previousIndex)
+        if (!shouldInclude(n.flags)) {
+            if (previousIndex >= 0) items.removeAt(previousIndex)
+            return
+        }
         val x = n.extras
         // Messaging apps relabel their reposted outgoing notification as "You"; keep the sender title.
         val title = x.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: return
-        val senderTitle = senderTitle(previous?.title, title)
+        val senderTitle = senderTitle(replySenders.remove(sbn.key), title)
         // ponytail: MessagingStyle carries the tray's appended conversation; fall back to plain text.
         val messages = androidx.core.app.NotificationCompat.MessagingStyle
             .extractMessagingStyleFromNotification(n)?.messages
@@ -76,15 +80,17 @@ class HubListener : NotificationListenerService() {
         // ponytail: keep the conversation only while this system notification lives.
         val text = if (replies.isEmpty()) incoming else
             (previous!!.text.lines() + incoming.lines().filterNot { it in replies }).distinct().joinToString("\n")
-        items.add(0, HubItem(
+        val updated = HubItem(
             sbn.key, sbn.packageName, senderTitle, text, sbn.postTime,
             kindOf(sbn.packageName, n), replyOf(n), n.contentIntent, previous?.starred ?: false, replies,
-        ))
+        )
+        if (previousIndex >= 0) items[previousIndex] = updated else items.add(0, updated)
     }
 
     companion object {
         val items = mutableStateListOf<HubItem>()
         private val retained = mutableSetOf<String>()
+        private val replySenders = mutableMapOf<String, String>()
         @Volatile private var listener: HubListener? = null
 
         fun isEnabled(ctx: Context): Boolean =
@@ -98,8 +104,8 @@ class HubListener : NotificationListenerService() {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
 
-        fun senderTitle(previous: String?, current: String) =
-            previous?.takeIf { current == "You" } ?: current
+        fun senderTitle(replySender: String?, current: String) =
+            replySender?.takeIf { current == "You" } ?: current
 
         fun isMessagingPackage(pkg: String): Boolean = pkg in setOf(
             "com.whatsapp", "com.whatsapp.w4b", "org.telegram.messenger", "org.telegram.messenger.web",
@@ -126,6 +132,7 @@ class HubListener : NotificationListenerService() {
         fun dismiss(key: String): Boolean {
             // WhatsApp children are rebuilt from their group summary unless the whole live group is cleared.
             retained.remove(key)
+            replySenders.remove(key)
             items.removeAll { it.key == key }
             val service = listener ?: return true
             return runCatching {
@@ -165,12 +172,16 @@ class HubListener : NotificationListenerService() {
                 arrayOf(remoteInput), intent,
                 android.os.Bundle().apply { putCharSequence(remoteInput.resultKey, text) },
             )
+            val previousSender = replySenders.put(item.key, item.title)
             return runCatching {
                 pendingIntent.send(ctx, 0, intent)
                 val index = items.indexOfFirst { it.key == item.key }
                 if (index >= 0) items[index] = items[index].let { it.copy(replies = it.replies + text) }
                 true
-            }.getOrDefault(false)
+            }.getOrElse {
+                if (previousSender == null) replySenders.remove(item.key) else replySenders[item.key] = previousSender
+                false
+            }
         }
     }
 }

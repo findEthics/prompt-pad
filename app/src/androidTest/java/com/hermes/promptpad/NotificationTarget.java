@@ -9,6 +9,8 @@ public class NotificationTarget extends Activity {
     static void post(Context ctx, String response) {
         NotificationManager nm = ctx.getSystemService(NotificationManager.class);
         nm.createNotificationChannel(new NotificationChannel("regression", "Regression", NotificationManager.IMPORTANCE_DEFAULT));
+        // Mirror messaging apps that withdraw the old child before reposting the outgoing reply.
+        if (response != null) nm.cancel(71);
         PendingIntent open = PendingIntent.getActivity(ctx, 71, new Intent(ctx, NotificationTarget.class).putExtra("conversation", "71"), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         PendingIntent reply = PendingIntent.getBroadcast(ctx, 71, new Intent(ctx, ReplyReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
         RemoteInput input = new RemoteInput.Builder("reply").setLabel("Reply").build();
