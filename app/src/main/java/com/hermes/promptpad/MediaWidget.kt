@@ -23,15 +23,15 @@ object MediaWidget {
     private var callback: MediaController.Callback? = null
 
     fun start(ctx: Context, component: ComponentName) {
-        if (manager != null) return  // already running (guard against double start from service + UI)
-        val m = ctx.getSystemService(Context.MEDIA_SESSION_SERVICE) as? MediaSessionManager ?: return
-        manager = m
-        val l = MediaSessionManager.OnActiveSessionsChangedListener { pick(it) }
-        listener = l
-        runCatching {
-            m.addOnActiveSessionsChangedListener(l, component)
-            pick(m.getActiveSessions(component))
+        if (manager == null) {
+            val m = ctx.getSystemService(Context.MEDIA_SESSION_SERVICE) as? MediaSessionManager ?: return
+            manager = m
+            val l = MediaSessionManager.OnActiveSessionsChangedListener { pick(it) }
+            listener = l
+            runCatching { m.addOnActiveSessionsChangedListener(l, component) }
         }
+        // A listener connection can be cached across an app update; refresh every visible Notifier.
+        manager?.let { m -> runCatching { pick(m.getActiveSessions(component)) } }
     }
 
     fun stop() {
@@ -43,11 +43,12 @@ object MediaWidget {
     }
 
     private fun pick(controllers: List<MediaController>?) {
-        // Only show the widget while something is actually playing (buffering/connecting = mid-play, keep).
+        // Watch an idle session too: playback-state changes do not change the active-session list.
         val active = controllers.orEmpty().firstOrNull { isPlaying(it.playbackState?.state) }
+            ?: controllers.orEmpty().firstOrNull()
         if (active == null) { unwatch(); state.value = null; return }
         watch(active)
-        update(active)
+        if (isPlaying(active.playbackState?.state)) update(active) else state.value = null
     }
 
     // ponytail: playing (or the brief buffering/connecting during a skip) shows the widget; paused/stopped hides it.
