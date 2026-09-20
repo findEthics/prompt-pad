@@ -62,7 +62,9 @@ class HubListener : NotificationListenerService() {
         items.removeAll { it.key == sbn.key }
         if (!shouldInclude(n.flags)) return
         val x = n.extras
+        // Messaging apps relabel their reposted outgoing notification as "You"; keep the sender title.
         val title = x.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: return
+        val senderTitle = senderTitle(previous?.title, title)
         // ponytail: MessagingStyle carries the tray's appended conversation; fall back to plain text.
         val messages = androidx.core.app.NotificationCompat.MessagingStyle
             .extractMessagingStyleFromNotification(n)?.messages
@@ -75,7 +77,7 @@ class HubListener : NotificationListenerService() {
         val text = if (replies.isEmpty()) incoming else
             (previous!!.text.lines() + incoming.lines().filterNot { it in replies }).distinct().joinToString("\n")
         items.add(0, HubItem(
-            sbn.key, sbn.packageName, title, text, sbn.postTime,
+            sbn.key, sbn.packageName, senderTitle, text, sbn.postTime,
             kindOf(sbn.packageName, n), replyOf(n), n.contentIntent, previous?.starred ?: false, replies,
         ))
     }
@@ -95,6 +97,9 @@ class HubListener : NotificationListenerService() {
             ctx.startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
+
+        fun senderTitle(previous: String?, current: String) =
+            previous?.takeIf { current == "You" } ?: current
 
         fun isMessagingPackage(pkg: String): Boolean = pkg in setOf(
             "com.whatsapp", "com.whatsapp.w4b", "org.telegram.messenger", "org.telegram.messenger.web",

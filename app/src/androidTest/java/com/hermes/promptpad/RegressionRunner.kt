@@ -44,6 +44,7 @@ class RegressionRunner : Instrumentation() {
             check(trayContains(item.key)) { "Reply dismissed the system notification" }
             val updated = HubListener.items.firstOrNull { it.key == item.key }
             check(updated != null) { "Reply dismissed the Notifier item" }
+            check(updated.title == "Regression chat") { "Reply changed sender to ${updated.title}" }
             check(updated.text.contains("Original message") && updated.replies.contains("Test reply")) { "Original/reply lost: ${updated.text}" }
             runOnMainSync { check(HubListener.open(targetContext, updated)) }
             await("content intent opened") { nodes().any { it.text?.toString() == "Conversation 71" } }
@@ -62,7 +63,7 @@ class RegressionRunner : Instrumentation() {
             checkNotesAndTodos()
             checkHome()
             checkPeak()
-            finish(Activity.RESULT_OK, Bundle().apply { putString("stream", "PASS: grouped notification tray dismissal and inline reply retention; note title focus/code command/scroll/reorder; todo back/reorder; screen-title and Home status insets; notifier gating/gestures; 90% font; weather configuration\n") })
+            finish(Activity.RESULT_OK, Bundle().apply { putString("stream", "PASS: grouped notification tray dismissal and inline reply sender retention; note title focus/code command/scroll/reorder; todo back/reorder; screen-title and Home status insets; notifier gating/gestures; 90% font; weather configuration\n") })
         } catch (e: Throwable) {
             android.util.Log.e("Regression", nodes().joinToString("\n") { "${it.text?.take(60)} visible=${it.isVisibleToUser} scroll=${it.isScrollable} focus=${it.isFocused} bounds=${Rect().also(it::getBoundsInScreen)}" })
             java.io.FileOutputStream(java.io.File(targetContext.filesDir, "regression-failure.png")).use {

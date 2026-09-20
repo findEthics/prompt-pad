@@ -15,7 +15,7 @@ public class NotificationTarget extends Activity {
         nm.notify(72, new Notification.Builder(ctx, "regression").setSmallIcon(android.R.drawable.ic_dialog_email)
             .setGroup("regression-chat").setGroupSummary(true).build());
         nm.notify(71, new Notification.Builder(ctx, "regression").setSmallIcon(android.R.drawable.ic_dialog_email)
-            .setContentTitle("Regression chat").setContentText(response == null ? "Original message" : response)
+            .setContentTitle(response == null ? "Regression chat" : "You").setContentText(response == null ? "Original message" : response)
             .setCategory(Notification.CATEGORY_MESSAGE).setGroup("regression-chat").setContentIntent(open)
             .addAction(new Notification.Action.Builder(null, "Reply", reply).addRemoteInput(input).build()).build());
     }

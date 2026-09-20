@@ -67,6 +67,12 @@ class LogicTest {
         assertTrue(HubListener.items.isEmpty())
     }
 
+    @Test fun repliedMessageKeepsTheOriginalSenderTitle() {
+        assertEquals("Dave", HubListener.senderTitle("Dave", "You"))
+        assertEquals("Dave", HubListener.senderTitle("Dave", "Dave"))
+        assertEquals("You", HubListener.senderTitle(null, "You"))
+    }
+
     @Test fun hubFiltersInterchangeCallsAndAllAndDropEmail() {
         assertEquals(listOf("Calls", "Messages", "All", "Starred"), HUB_FILTERS)
         assertEquals("All", HUB_FILTERS[2]) // default selection
