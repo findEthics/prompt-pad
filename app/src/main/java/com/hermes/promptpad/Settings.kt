@@ -74,10 +74,10 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = Dim,
             )
-            Text("Weather data: MET Norway (CC BY 4.0)",
-                Modifier.clickable { uriHandler.openUri("https://api.met.no/doc/License") },
+            Text("Weather data: Open-Meteo",
+                Modifier.clickable { uriHandler.openUri("https://open-meteo.com") },
                 style = MaterialTheme.typography.labelSmall, color = DotIdle)
-            Text("Forecast adapted for compact display.",
+            Text("Forecast adapted for compact display; refreshes every 30 minutes.",
                 Modifier.padding(bottom = 12.dp),
                 style = MaterialTheme.typography.labelSmall, color = DotIdle)
             Text("prompt-pad ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",

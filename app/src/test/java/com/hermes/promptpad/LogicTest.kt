@@ -60,6 +60,13 @@ class LogicTest {
         assertTrue(HubListener.shouldInclude(0))
     }
 
+    @Test fun dismissRemovesAStarredNotificationFromNotifier() {
+        HubListener.items.clear()
+        HubListener.items += HubItem("starred", "pkg", "title", "", 0, HubKind.OTHER, null, null, starred = true)
+        assertTrue(HubListener.dismiss("starred"))
+        assertTrue(HubListener.items.isEmpty())
+    }
+
     @Test fun hubFiltersInterchangeCallsAndAllAndDropEmail() {
         assertEquals(listOf("Calls", "Messages", "All", "Starred"), HUB_FILTERS)
         assertEquals("All", HUB_FILTERS[2]) // default selection
@@ -100,12 +107,20 @@ class LogicTest {
         assertEquals(TextRange.Zero, initialNoteBodyValue("first\nsecond").selection)
     }
 
-    @Test fun weatherSymbolsAndRefreshRulesAreLocalAndDeterministic() {
-        assertEquals("🌙", weatherEmoji("clearsky_night"))
-        assertEquals("⛅", weatherEmoji("partlycloudy_day"))
-        assertEquals("🌧️", weatherEmoji("heavyrain"))
-        assertEquals("❄️", weatherEmoji("lightsnowshowers_day"))
-        assertEquals("⛅ 25°C", weatherText(24.6, "partlycloudy_day"))
+    @Test fun openMeteoWeatherCodesAndRefreshRulesAreLocalAndDeterministic() {
+        assertEquals("☀️", weatherEmoji("0", true))
+        assertEquals("🌙", weatherEmoji("0", false))
+        assertEquals("⛅", weatherEmoji("2", true))
+        assertEquals("🌙☁️", weatherEmoji("2", false))
+        assertEquals("🌧️", weatherEmoji("63", false))
+        assertEquals("❄️", weatherEmoji("75", false))
+        assertEquals("⛈️", weatherEmoji("95", false))
+        assertEquals("🌙☁️ 25°C", weatherText(24.6, "2", false))
+        val weather = openMeteoCache(17.6, 63, false, 100)
+        assertEquals(17.6, weather.apparentTemperatureC, 0.0)
+        assertEquals("63", weather.weatherCode)
+        assertFalse(weather.isDay)
+        assertEquals(100 + 30 * 60_000L, weather.expiresAt)
         assertFalse(weatherRefreshRequired(false, true, false, 0, 10))
         assertTrue(weatherRefreshRequired(true, true, false, 0, 10))
         assertFalse(weatherRefreshRequired(true, true, true, 20, 10))

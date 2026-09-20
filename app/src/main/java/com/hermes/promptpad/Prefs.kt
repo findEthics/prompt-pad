@@ -45,24 +45,26 @@ class Prefs(ctx: Context) {
             .putString("weatherLatitude", location.latitude.toString())
             .putString("weatherLongitude", location.longitude.toString())
             .remove("weatherTemperature").remove("weatherSymbol").remove("weatherFetchedAt")
-            .remove("weatherExpiresAt").remove("weatherLastModified")
+            .remove("weatherExpiresAt").remove("weatherIsDay").remove("weatherLastModified").remove("weatherSource")
             .apply()
     }
 
     fun weatherCache(): WeatherCache? {
-        val temperature = p.getString("weatherTemperature", null)?.toDoubleOrNull() ?: return null
-        val symbol = p.getString("weatherSymbol", null) ?: return null
+        if (p.getString("weatherSource", "") != "open-meteo-day-night") return null
+        val apparentTemperature = p.getString("weatherTemperature", null)?.toDoubleOrNull() ?: return null
+        val code = p.getString("weatherSymbol", null) ?: return null
+        if (!p.contains("weatherIsDay")) return null
         return WeatherCache(
-            temperature, symbol, p.getLong("weatherFetchedAt", 0), p.getLong("weatherExpiresAt", 0),
-            p.getString("weatherLastModified", "").orEmpty(),
+            apparentTemperature, code, p.getBoolean("weatherIsDay", true),
+            p.getLong("weatherFetchedAt", 0), p.getLong("weatherExpiresAt", 0),
         )
     }
 
     fun saveWeatherCache(cache: WeatherCache) {
-        p.edit().putString("weatherTemperature", cache.temperatureC.toString())
-            .putString("weatherSymbol", cache.symbolCode)
+        p.edit().putString("weatherTemperature", cache.apparentTemperatureC.toString())
+            .putString("weatherSymbol", cache.weatherCode).putBoolean("weatherIsDay", cache.isDay)
             .putLong("weatherFetchedAt", cache.fetchedAt).putLong("weatherExpiresAt", cache.expiresAt)
-            .putString("weatherLastModified", cache.lastModified).apply()
+            .putString("weatherSource", "open-meteo-day-night").remove("weatherLastModified").apply()
     }
 
     var tiles: List<String>

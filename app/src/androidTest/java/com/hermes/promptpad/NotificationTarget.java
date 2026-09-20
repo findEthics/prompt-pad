@@ -12,9 +12,11 @@ public class NotificationTarget extends Activity {
         PendingIntent open = PendingIntent.getActivity(ctx, 71, new Intent(ctx, NotificationTarget.class).putExtra("conversation", "71"), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         PendingIntent reply = PendingIntent.getBroadcast(ctx, 71, new Intent(ctx, ReplyReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
         RemoteInput input = new RemoteInput.Builder("reply").setLabel("Reply").build();
+        nm.notify(72, new Notification.Builder(ctx, "regression").setSmallIcon(android.R.drawable.ic_dialog_email)
+            .setGroup("regression-chat").setGroupSummary(true).build());
         nm.notify(71, new Notification.Builder(ctx, "regression").setSmallIcon(android.R.drawable.ic_dialog_email)
             .setContentTitle("Regression chat").setContentText(response == null ? "Original message" : response)
-            .setCategory(Notification.CATEGORY_MESSAGE).setContentIntent(open)
+            .setCategory(Notification.CATEGORY_MESSAGE).setGroup("regression-chat").setContentIntent(open)
             .addAction(new Notification.Action.Builder(null, "Reply", reply).addRemoteInput(input).build()).build());
     }
     @Override public void onCreate(Bundle state) {

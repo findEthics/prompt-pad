@@ -31,6 +31,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,6 +46,7 @@ val HUB_FILTERS = listOf("Calls", "Messages", "All", "Starred")
 fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) {
     val ctx = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
+    val uriHandler = LocalUriHandler.current
     var filter by remember { mutableIntStateOf(HUB_FILTERS.indexOf("All")) }
     var replyingTo by remember { mutableStateOf<String?>(null) }
     val all = HubListener.items
@@ -64,6 +66,12 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
     }
 
     val time = remember(tick) { java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date()) }
+    var weather by remember(prefs.notifierAsHome, prefs.showWeather, prefs.weatherLabel) {
+        mutableStateOf(if (prefs.notifierAsHome && prefs.showWeather) prefs.weatherCache() else null)
+    }
+    LaunchedEffect(prefs.notifierAsHome, prefs.showWeather, prefs.weatherLatitude, prefs.weatherLongitude, tick) {
+        weather = if (prefs.notifierAsHome && prefs.showWeather) Weather.current(prefs) else null
+    }
     // Also start media polling from the UI: onListenerConnected may not re-fire after an app update.
     LaunchedEffect(Unit) { MediaWidget.start(ctx, android.content.ComponentName(ctx, HubListener::class.java)) }
     EdgeScreen("notifier", Modifier.pointerInput(prefs.notifierAsHome) {
@@ -85,6 +93,11 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
     },
     heading = if (prefs.notifierAsHome) ({
         Text(time, Modifier.fillMaxWidth(), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, color = Accent)
+    }) else null,
+    topRight = if (prefs.notifierAsHome && prefs.showWeather) ({
+        Text(weather?.let { weatherText(it.apparentTemperatureC, it.weatherCode, it.isDay) } ?: "—",
+            Modifier.clickable { uriHandler.openUri("https://overcast-chi.vercel.app") },
+            style = MaterialTheme.typography.bodySmall)
     }) else null) {
         if (!HubListener.isEnabled(ctx)) {
             Card(Modifier.fillMaxWidth(), onClick = { HubListener.openSettings(ctx) }) {
@@ -146,8 +159,8 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
                                     if (i >= 0) {
                                         val nowStarred = !item.starred
                                         all[i] = item.copy(starred = nowStarred)
-                                        // Starring clears it from Android's tray but keeps it under Starred.
-                                        if (nowStarred) HubListener.dismiss(item.key)
+                                        // Starring clears Android's tray but retains the card in Starred.
+                                        if (nowStarred) HubListener.retain(item.key)
                                     }
                                 }.padding(start = 8.dp),
                                 style = MaterialTheme.typography.bodyMedium, color = Accent)
