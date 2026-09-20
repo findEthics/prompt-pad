@@ -169,7 +169,7 @@ fun PeakWidget(prefs: Prefs, tick: Int, nav: (Screen) -> Unit, editing: Boolean,
         Spacer(Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (prefs.showWeather) {
-                Text(weather?.let { weatherText(it.temperatureC, it.symbolCode) } ?: "—",
+                Text(weather?.let { weatherText(it.apparentTemperatureC, it.weatherCode, it.isDay) } ?: "—",
                     weatherModifier,
                     style = MaterialTheme.typography.bodySmall)
                 if (prefs.showBattery) Text("  ·  ", style = MaterialTheme.typography.bodySmall, color = DotIdle)

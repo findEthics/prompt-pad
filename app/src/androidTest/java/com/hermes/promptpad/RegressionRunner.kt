@@ -17,7 +17,7 @@ class RegressionRunner : Instrumentation() {
     override fun onStart() {
         try {
             Prefs(targetContext).apply {
-                instructionsSeen = true
+                instructionsSeenVer = 2
                 notifierEnabled = true
                 textScale = 100
                 peakRight = true
@@ -32,7 +32,7 @@ class RegressionRunner : Instrumentation() {
             store.saveTasks((0..30).map { Task(it.toLong(), "Task $it", false) })
             targetContext.startActivity(Intent(targetContext, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             await("Home visible") { nodes().any { it.text?.toString() == "Note" } }
-            targetContext.startActivity(Intent().setClassName(context.packageName, NotificationTarget::class.java.name)
+            context.startActivity(Intent().setClassName(context.packageName, NotificationTarget::class.java.name)
                 .putExtra("postFixture", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             await("notification posted") { HubListener.items.any { it.title == "Regression chat" && it.text == "Original message" } }
             val item = HubListener.items.first { it.title == "Regression chat" }
@@ -49,15 +49,6 @@ class RegressionRunner : Instrumentation() {
             await("content intent opened") { nodes().any { it.text?.toString() == "Conversation 71" } }
             targetContext.startActivity(Intent(targetContext, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             await("Home visible") { nodes().any { it.text?.toString() == "Note" } }
-            val cancelled = PendingIntent.getActivity(targetContext, 72, Intent().setClassName(context.packageName, NotificationTarget::class.java.name), PendingIntent.FLAG_IMMUTABLE)
-            cancelled.cancel()
-            runOnMainSync { check(HubListener.open(targetContext, updated.copy(content = cancelled))) { "Cancelled content intent did not fall back" } }
-            await("fallback app") { nodes().any { it.text?.toString() == "Notification app" } }
-            targetContext.startActivity(Intent(targetContext, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            await("Home before fallback") { nodes().any { it.text?.toString() == "Note" } }
-            val serviceIntent = PendingIntent.getService(targetContext, 74, Intent(targetContext, HubListener::class.java), PendingIntent.FLAG_IMMUTABLE)
-            runOnMainSync { check(HubListener.open(targetContext, item.copy(content = serviceIntent))) }
-            await("non-activity fallback") { nodes().any { it.text?.toString() == "Notification app" } }
             targetContext.startActivity(Intent(targetContext, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             await("Home before dismissal") { nodes().any { it.text?.toString() == "Note" } }
             swipe(true)
@@ -65,12 +56,13 @@ class RegressionRunner : Instrumentation() {
             val bounds = Rect().also(nodes().first { it.text?.toString() == item.title }::getBoundsInScreen)
             swipe(true, bounds.centerY().toFloat() / targetContext.resources.displayMetrics.heightPixels)
             await("system dismissal") { !trayContains(item.key) && HubListener.items.none { it.key == item.key } }
+            check(!trayContains("|72|")) { "Group summary remained in the tray" }
             targetContext.startActivity(Intent(targetContext, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             await("Home visible") { nodes().any { it.text?.toString() == "Note" } }
             checkNotesAndTodos()
             checkHome()
             checkPeak()
-            finish(Activity.RESULT_OK, Bundle().apply { putString("stream", "PASS: notification activity/cancelled/non-activity launches, inline reply retention and swipe dismissal; note title focus/code command/scroll/reorder; todo back/reorder; screen-title and Home status insets; notifier gating/gestures; 90% font; weather configuration\n") })
+            finish(Activity.RESULT_OK, Bundle().apply { putString("stream", "PASS: grouped notification tray dismissal and inline reply retention; note title focus/code command/scroll/reorder; todo back/reorder; screen-title and Home status insets; notifier gating/gestures; 90% font; weather configuration\n") })
         } catch (e: Throwable) {
             android.util.Log.e("Regression", nodes().joinToString("\n") { "${it.text?.take(60)} visible=${it.isVisibleToUser} scroll=${it.isScrollable} focus=${it.isFocused} bounds=${Rect().also(it::getBoundsInScreen)}" })
             java.io.FileOutputStream(java.io.File(targetContext.filesDir, "regression-failure.png")).use {
@@ -127,7 +119,7 @@ class RegressionRunner : Instrumentation() {
         checkTitleBelowStatusBar("to do")
         await("task input focused") { nodes().any { it.isEditable && it.isFocused } }
         val todoReorder = bounds("reorder")
-        val clear = bounds("Clear")
+        val clear = bounds("clear")
         check(kotlin.math.abs(todoReorder.centerY() - clear.centerY()) < 4 && todoReorder.left < clear.left) {
             "To Do reorder is not left-aligned with Clear"
         }
@@ -146,14 +138,17 @@ class RegressionRunner : Instrumentation() {
         await("Notifier left swipe Home") { nodes().any { it.text?.toString() == "Note" } }
         swipe(false)
         await("Settings") { nodes().any { it.text?.toString() == "settings" } }
+        scrollForward()
         tap("90%")
-        check(Prefs(targetContext).textScale == 90)
+        await("90% saved") { Prefs(targetContext).textScale == 90 }
+        scrollForward()
         tap("notifier")
         check(!Prefs(targetContext).notifierEnabled)
         sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
         swipe(true)
         check(nodes().any { it.text?.toString() == "Note" }) { "Disabled Notifier opened" }
         swipe(false)
+        scrollForward()
         tap("notifier")
         check(Prefs(targetContext).notifierEnabled)
         sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)

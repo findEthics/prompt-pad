@@ -46,14 +46,17 @@ class HubListener : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) = add(sbn)
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        // ponytail: keep starred items in-memory after we clear them from the tray.
-        items.removeAll { it.key == sbn.key && !it.starred }
+        // Keep only removals explicitly caused by starring; every clear removes the card.
+        if (!retained.remove(sbn.key)) items.removeAll { it.key == sbn.key }
     }
 
     private fun add(sbn: StatusBarNotification) {
         if (sbn.packageName == packageName) return
-        // ponytail: the playing app's media notification is surfaced by the MediaWidget instead.
-        if (sbn.packageName == MediaWidget.state.value?.pkg) return
+        // The media widget owns an active session's notification, including when paused.
+        if (sbn.packageName == MediaWidget.state.value?.pkg) {
+            MediaWidget.rememberNotification(sbn.key)
+            return
+        }
         val n = sbn.notification
         val previous = items.firstOrNull { it.key == sbn.key }
         items.removeAll { it.key == sbn.key }
@@ -79,6 +82,7 @@ class HubListener : NotificationListenerService() {
 
     companion object {
         val items = mutableStateListOf<HubItem>()
+        private val retained = mutableSetOf<String>()
         @Volatile private var listener: HubListener? = null
 
         fun isEnabled(ctx: Context): Boolean =
@@ -109,11 +113,22 @@ class HubListener : NotificationListenerService() {
             return null
         }
 
+        fun retain(key: String) {
+            retained += key
+            runCatching { listener?.cancelNotification(key) }
+        }
+
         fun dismiss(key: String): Boolean {
-            val service = listener ?: return false
+            // WhatsApp children are rebuilt from their group summary unless the whole live group is cleared.
+            retained.remove(key)
+            items.removeAll { it.key == key }
+            val service = listener ?: return true
             return runCatching {
-                // Removal is confirmed only by onNotificationRemoved.
-                service.cancelNotification(key)
+                val active = service.activeNotifications ?: return false
+                val source = active.firstOrNull { it.key == key } ?: return false
+                val keys = active.filter { it.key == key || source.isGroup && it.groupKey == source.groupKey }
+                    .map { it.key }.toTypedArray()
+                service.cancelNotifications(keys)
                 true
             }.getOrDefault(false)
         }

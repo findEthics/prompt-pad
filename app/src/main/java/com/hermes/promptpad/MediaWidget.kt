@@ -9,8 +9,7 @@ import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import androidx.compose.runtime.mutableStateOf
 
-// ponytail: trimmed from katapult's AudioWidgetHelper — one active session, no dismissal memory
-// (the notifier already hides the media notification, so there's nothing to re-summon).
+// ponytail: trimmed from katapult's AudioWidgetHelper — one active session only.
 @SuppressLint("StaticFieldLeak")
 object MediaWidget {
     data class Info(val pkg: String, val playing: Boolean, val title: String?, val artist: String?, val controller: MediaController)
@@ -21,17 +20,19 @@ object MediaWidget {
     private var listener: MediaSessionManager.OnActiveSessionsChangedListener? = null
     private var controller: MediaController? = null
     private var callback: MediaController.Callback? = null
+    private var notificationKey: String? = null
+    private var dismissed = false
 
     fun start(ctx: Context, component: ComponentName) {
-        if (manager != null) return  // already running (guard against double start from service + UI)
-        val m = ctx.getSystemService(Context.MEDIA_SESSION_SERVICE) as? MediaSessionManager ?: return
-        manager = m
-        val l = MediaSessionManager.OnActiveSessionsChangedListener { pick(it) }
-        listener = l
-        runCatching {
-            m.addOnActiveSessionsChangedListener(l, component)
-            pick(m.getActiveSessions(component))
+        if (manager == null) {
+            val m = ctx.getSystemService(Context.MEDIA_SESSION_SERVICE) as? MediaSessionManager ?: return
+            manager = m
+            val l = MediaSessionManager.OnActiveSessionsChangedListener { pick(it) }
+            listener = l
+            runCatching { m.addOnActiveSessionsChangedListener(l, component) }
         }
+        // A listener connection can be cached across an app update; refresh every visible Notifier.
+        manager?.let { m -> runCatching { pick(m.getActiveSessions(component)) } }
     }
 
     fun stop() {
@@ -43,25 +44,29 @@ object MediaWidget {
     }
 
     private fun pick(controllers: List<MediaController>?) {
-        // Only show the widget while something is actually playing (buffering/connecting = mid-play, keep).
+        // Watch an idle session too: playback-state changes do not change the active-session list.
         val active = controllers.orEmpty().firstOrNull { isPlaying(it.playbackState?.state) }
+            ?: controllers.orEmpty().firstOrNull { isActiveState(it.playbackState?.state) }
+            ?: controllers.orEmpty().firstOrNull()
         if (active == null) { unwatch(); state.value = null; return }
         watch(active)
-        update(active)
+        if (isActiveState(active.playbackState?.state)) update(active) else state.value = null
     }
 
-    // ponytail: playing (or the brief buffering/connecting during a skip) shows the widget; paused/stopped hides it.
     fun isPlaying(s: Int?) = s == PlaybackState.STATE_PLAYING || s == PlaybackState.STATE_BUFFERING ||
         s == PlaybackState.STATE_CONNECTING
+
+    fun isActiveState(s: Int?) = s != null && s != PlaybackState.STATE_NONE && s != PlaybackState.STATE_STOPPED
 
     private fun watch(c: MediaController) {
         if (controller?.sessionToken == c.sessionToken) return
         unwatch()
+        notificationKey = null
+        dismissed = false
         val cb = object : MediaController.Callback() {
             override fun onMetadataChanged(m: android.media.MediaMetadata?) = update(c)
             override fun onPlaybackStateChanged(s: PlaybackState?) {
-                // Pause/stop clears the widget (lets the app's dismissible notification return); resume re-shows it.
-                if (isPlaying(s?.state)) update(c) else state.value = null
+                if (isActiveState(s?.state)) update(c) else state.value = null
             }
             override fun onSessionDestroyed() { state.value = null }
         }
@@ -74,6 +79,10 @@ object MediaWidget {
     }
 
     private fun update(c: MediaController) {
+        val playback = c.playbackState?.state
+        if (!isActiveState(playback) || dismissed && !isPlaying(playback)) return
+        if (isPlaying(playback)) dismissed = false
+        HubListener.items.firstOrNull { it.pkg == c.packageName }?.key?.let { notificationKey = it }
         HubListener.items.removeAll { it.pkg == c.packageName }
         val md = c.metadata
         state.value = Info(
@@ -83,6 +92,16 @@ object MediaWidget {
             md?.description?.subtitle?.toString(),
             c,
         )
+    }
+
+    fun rememberNotification(key: String) { notificationKey = key }
+
+    fun dismiss() {
+        if (state.value?.playing != false) return
+        dismissed = true
+        notificationKey?.let { HubListener.dismiss(it) }
+        notificationKey = null
+        state.value = null
     }
 
     fun playPause() = state.value?.controller?.let {

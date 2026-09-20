@@ -31,6 +31,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,6 +46,7 @@ val HUB_FILTERS = listOf("Calls", "Messages", "All", "Starred")
 fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) {
     val ctx = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
+    val uriHandler = LocalUriHandler.current
     var filter by remember { mutableIntStateOf(HUB_FILTERS.indexOf("All")) }
     var replyingTo by remember { mutableStateOf<String?>(null) }
     val all = HubListener.items
@@ -64,6 +66,12 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
     }
 
     val time = remember(tick) { java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date()) }
+    var weather by remember(prefs.notifierAsHome, prefs.showWeather, prefs.weatherLabel) {
+        mutableStateOf(if (prefs.notifierAsHome && prefs.showWeather) prefs.weatherCache() else null)
+    }
+    LaunchedEffect(prefs.notifierAsHome, prefs.showWeather, prefs.weatherLatitude, prefs.weatherLongitude, tick) {
+        weather = if (prefs.notifierAsHome && prefs.showWeather) Weather.current(prefs) else null
+    }
     // Also start media polling from the UI: onListenerConnected may not re-fire after an app update.
     LaunchedEffect(Unit) { MediaWidget.start(ctx, android.content.ComponentName(ctx, HubListener::class.java)) }
     EdgeScreen("notifier", Modifier.pointerInput(prefs.notifierAsHome) {
@@ -85,6 +93,11 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
     },
     heading = if (prefs.notifierAsHome) ({
         Text(time, Modifier.fillMaxWidth(), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, color = Accent)
+    }) else null,
+    topRight = if (prefs.notifierAsHome && prefs.showWeather) ({
+        Text(weather?.let { weatherText(it.apparentTemperatureC, it.weatherCode, it.isDay) } ?: "—",
+            Modifier.clickable { uriHandler.openUri("https://overcast-chi.vercel.app") },
+            style = MaterialTheme.typography.bodySmall)
     }) else null) {
         if (!HubListener.isEnabled(ctx)) {
             Card(Modifier.fillMaxWidth(), onClick = { HubListener.openSettings(ctx) }) {
@@ -94,19 +107,27 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
             }
             Spacer(Modifier.height(Dim2.gap))
         }
-        // Media widget pinned above the list whenever audio is active (its own notification is hidden).
+        // Active and paused sessions both remain controls; only paused cards are dismissible.
         val media = MediaWidget.state.value
         if (media != null) {
-            Card(Modifier.fillMaxWidth(), onClick = { MediaWidget.open(ctx) }) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(media.title ?: "Playing", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        if (!media.artist.isNullOrBlank()) Text(media.artist, style = MaterialTheme.typography.bodySmall, color = Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val card = @Composable {
+                Card(Modifier.fillMaxWidth(), onClick = { MediaWidget.open(ctx) }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(media.title ?: "Playing", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (!media.artist.isNullOrBlank()) Text(media.artist, style = MaterialTheme.typography.bodySmall, color = Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        Text("⏮", Modifier.clickable { MediaWidget.prev() }.padding(8.dp), fontSize = 18.sp, color = Accent)
+                        Text(if (media.playing) "⏸" else "▶", Modifier.clickable { MediaWidget.playPause() }.padding(8.dp), fontSize = 18.sp, color = Accent)
+                        Text("⏭", Modifier.clickable { MediaWidget.next() }.padding(8.dp), fontSize = 18.sp, color = Accent)
                     }
-                    Text("⏮", Modifier.clickable { MediaWidget.prev() }.padding(8.dp), fontSize = 18.sp, color = Accent)
-                    Text(if (media.playing) "⏸" else "▶", Modifier.clickable { MediaWidget.playPause() }.padding(8.dp), fontSize = 18.sp, color = Accent)
-                    Text("⏭", Modifier.clickable { MediaWidget.next() }.padding(8.dp), fontSize = 18.sp, color = Accent)
                 }
+            }
+            if (media.playing) card() else {
+                val dismissState = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
+                    if (value == SwipeToDismissBoxValue.Settled) true else { MediaWidget.dismiss(); false }
+                })
+                SwipeToDismissBox(dismissState, {}, enableDismissFromStartToEnd = true, enableDismissFromEndToStart = true) { card() }
             }
             Spacer(Modifier.height(Dim2.gap))
         }
@@ -138,8 +159,8 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
                                     if (i >= 0) {
                                         val nowStarred = !item.starred
                                         all[i] = item.copy(starred = nowStarred)
-                                        // Starring clears it from Android's tray but keeps it under Starred.
-                                        if (nowStarred) HubListener.dismiss(item.key)
+                                        // Starring clears Android's tray but retains the card in Starred.
+                                        if (nowStarred) HubListener.retain(item.key)
                                     }
                                 }.padding(start = 8.dp),
                                 style = MaterialTheme.typography.bodyMedium, color = Accent)
