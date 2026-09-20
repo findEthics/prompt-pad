@@ -94,19 +94,27 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
             }
             Spacer(Modifier.height(Dim2.gap))
         }
-        // Media widget pinned above the list whenever audio is active (its own notification is hidden).
+        // Active and paused sessions both remain controls; only paused cards are dismissible.
         val media = MediaWidget.state.value
         if (media != null) {
-            Card(Modifier.fillMaxWidth(), onClick = { MediaWidget.open(ctx) }) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(media.title ?: "Playing", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        if (!media.artist.isNullOrBlank()) Text(media.artist, style = MaterialTheme.typography.bodySmall, color = Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val card = @Composable {
+                Card(Modifier.fillMaxWidth(), onClick = { MediaWidget.open(ctx) }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(media.title ?: "Playing", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (!media.artist.isNullOrBlank()) Text(media.artist, style = MaterialTheme.typography.bodySmall, color = Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        Text("⏮", Modifier.clickable { MediaWidget.prev() }.padding(8.dp), fontSize = 18.sp, color = Accent)
+                        Text(if (media.playing) "⏸" else "▶", Modifier.clickable { MediaWidget.playPause() }.padding(8.dp), fontSize = 18.sp, color = Accent)
+                        Text("⏭", Modifier.clickable { MediaWidget.next() }.padding(8.dp), fontSize = 18.sp, color = Accent)
                     }
-                    Text("⏮", Modifier.clickable { MediaWidget.prev() }.padding(8.dp), fontSize = 18.sp, color = Accent)
-                    Text(if (media.playing) "⏸" else "▶", Modifier.clickable { MediaWidget.playPause() }.padding(8.dp), fontSize = 18.sp, color = Accent)
-                    Text("⏭", Modifier.clickable { MediaWidget.next() }.padding(8.dp), fontSize = 18.sp, color = Accent)
                 }
+            }
+            if (media.playing) card() else {
+                val dismissState = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
+                    if (value == SwipeToDismissBoxValue.Settled) true else { MediaWidget.dismiss(); false }
+                })
+                SwipeToDismissBox(dismissState, {}, enableDismissFromStartToEnd = true, enableDismissFromEndToStart = true) { card() }
             }
             Spacer(Modifier.height(Dim2.gap))
         }

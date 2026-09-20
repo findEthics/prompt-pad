@@ -52,8 +52,11 @@ class HubListener : NotificationListenerService() {
 
     private fun add(sbn: StatusBarNotification) {
         if (sbn.packageName == packageName) return
-        // ponytail: the playing app's media notification is surfaced by the MediaWidget instead.
-        if (sbn.packageName == MediaWidget.state.value?.pkg) return
+        // The media widget owns an active session's notification, including when paused.
+        if (sbn.packageName == MediaWidget.state.value?.pkg) {
+            MediaWidget.rememberNotification(sbn.key)
+            return
+        }
         val n = sbn.notification
         val previous = items.firstOrNull { it.key == sbn.key }
         items.removeAll { it.key == sbn.key }
