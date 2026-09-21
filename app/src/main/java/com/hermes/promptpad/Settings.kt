@@ -104,7 +104,9 @@ private fun WeatherLocationSetting(prefs: Prefs, onChanged: () -> Unit) {
         TextField(
             query, { query = it }, Modifier.weight(1f), singleLine = true,
             placeholder = { Text("city", color = DotIdle) },
-            textStyle = MaterialTheme.typography.bodyMedium,
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                color = if (prefs.hasWeatherLocation && query == prefs.weatherLabel) Accent else White,
+            ),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Black, unfocusedContainerColor = Black,
                 cursorColor = Accent, focusedIndicatorColor = Accent, unfocusedIndicatorColor = DotIdle,
@@ -132,7 +134,7 @@ private fun WeatherLocationSetting(prefs: Prefs, onChanged: () -> Unit) {
             results = emptyList()
             onChanged()
             scope.launch { Weather.current(prefs) }
-        }) { Text(location.label, style = MaterialTheme.typography.bodySmall) }
+        }) { Text(location.label, style = MaterialTheme.typography.bodySmall, color = Accent) }
     }
 }
 

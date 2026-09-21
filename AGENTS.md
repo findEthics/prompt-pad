@@ -34,7 +34,7 @@ Activity tracking and Focus/Monk restriction modes are intentionally purged, inc
 
 ## Verified release: notifier reply sender title (v1.9 / code 10, 2026-09-20)
 - Messaging apps may withdraw then repost an inline-reply notification titled `You`. The reply path retains the original sender and keeps the existing card through that transient removal, updating it in place rather than remove/re-add. The Android regression fixture cancels then reposts an outgoing notification as `You` and asserts the title stays `Regression chat`.
-- `:app:testDebugUnitTest :app:assembleDebug` and API 36 instrumentation pass. Signed/minified v1.9/code-10 release passed v3 signature and ZIP checks and clean-installed/cold-launched on API 36 (`runtime_crash=false`). Artifact: `app/build/outputs/apk/release/prompt-pad-release.apk` (SHA-256 `4e9a04bb6f91f171173a45f4d42f6314b9ccc93846e5465b0ec17195fdd2c576`).
+- `:app:testDebugUnitTest :app:assembleDebug` and API 36 instrumentation pass. Signed/minified v1.9/code-10 release passed v3 signature and ZIP checks and clean-installed/cold-launched on API 36 (`runtime_crash=false`). The Settings weather-location search results and saved label use the app orange. Artifact: `app/build/outputs/apk/release/prompt-pad-release.apk` (SHA-256 `3d1af3d85b4ac66f780542d2eabf014d07fe2f3a1aa0ac9b380a653121d08f1b`).
 
 ## Verified release: Open-Meteo night icons (v1.7 / code 8, 2026-09-20)
 - Open-Meteo's current `is_day` is cached with the WMO code, so clear and partly-cloudy displays correctly switch to moon variants after sunset. The incompatible v1.6 weather cache is invalidated and refreshed once; the 30-minute cadence is unchanged.
