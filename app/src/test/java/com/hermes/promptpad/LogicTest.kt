@@ -60,6 +60,19 @@ class LogicTest {
         assertTrue(HubListener.shouldInclude(0))
     }
 
+    @Test fun gmailAndWhatsappDismissalIsPerNotification() {
+        listOf("com.google.android.gm", "com.whatsapp", "com.whatsapp.w4b").forEach { pkg ->
+            assertTrue(HubListener.dismissesIndividually(pkg))
+            assertFalse(HubListener.shouldDismissKey("key", pkg, true, "group", "other", "group"))
+            assertTrue(HubListener.shouldDismissKey("key", pkg, true, "group", "key", "group"))
+        }
+    }
+
+    @Test fun otherGroupedAppsStillClearTheirLiveGroup() {
+        assertTrue(HubListener.shouldDismissKey("key", "org.telegram.messenger", true, "chat", "other", "chat"))
+        assertFalse(HubListener.shouldDismissKey("key", "org.telegram.messenger", false, "chat", "other", "chat"))
+    }
+
     @Test fun dismissRemovesAStarredNotificationFromNotifier() {
         HubListener.items.clear()
         HubListener.items += HubItem("starred", "pkg", "title", "", 0, HubKind.OTHER, null, null, starred = true)

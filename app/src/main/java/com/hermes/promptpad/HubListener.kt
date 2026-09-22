@@ -129,8 +129,16 @@ class HubListener : NotificationListenerService() {
             runCatching { listener?.cancelNotification(key) }
         }
 
+        // Notification keys are profile-specific; add only confirmed app packages here.
+        internal val individuallyDismissedPackages = setOf("com.google.android.gm", "com.whatsapp", "com.whatsapp.w4b")
+        internal fun dismissesIndividually(pkg: String) = pkg in individuallyDismissedPackages
+
+        internal fun shouldDismissKey(sourceKey: String, sourcePkg: String, sourceIsGroup: Boolean,
+            sourceGroupKey: String, candidateKey: String, candidateGroupKey: String) =
+            candidateKey == sourceKey || !dismissesIndividually(sourcePkg) && sourceIsGroup && candidateGroupKey == sourceGroupKey
+
         fun dismiss(key: String): Boolean {
-            // WhatsApp children are rebuilt from their group summary unless the whole live group is cleared.
+            // Other grouped apps can rebuild a child from their summary, so clear their live group.
             retained.remove(key)
             replySenders.remove(key)
             items.removeAll { it.key == key }
@@ -138,8 +146,9 @@ class HubListener : NotificationListenerService() {
             return runCatching {
                 val active = service.activeNotifications ?: return false
                 val source = active.firstOrNull { it.key == key } ?: return false
-                val keys = active.filter { it.key == key || source.isGroup && it.groupKey == source.groupKey }
-                    .map { it.key }.toTypedArray()
+                val keys = active.filter {
+                    shouldDismissKey(key, source.packageName, source.isGroup, source.groupKey, it.key, it.groupKey)
+                }.map { it.key }.toTypedArray()
                 service.cancelNotifications(keys)
                 true
             }.getOrDefault(false)

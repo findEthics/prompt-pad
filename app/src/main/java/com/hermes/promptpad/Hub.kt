@@ -17,6 +17,10 @@ import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.StarOutline
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -117,9 +121,9 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
                             Text(media.title ?: "Playing", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             if (!media.artist.isNullOrBlank()) Text(media.artist, style = MaterialTheme.typography.bodySmall, color = Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        Text("⏮", Modifier.clickable { MediaWidget.prev() }.padding(8.dp), fontSize = 18.sp, color = Accent)
-                        Text(if (media.playing) "⏸" else "▶", Modifier.clickable { MediaWidget.playPause() }.padding(8.dp), fontSize = 18.sp, color = Accent)
-                        Text("⏭", Modifier.clickable { MediaWidget.next() }.padding(8.dp), fontSize = 18.sp, color = Accent)
+                        IconButton(MediaWidget::prev) { Icon(Icons.Filled.SkipPrevious, "Previous track", Modifier.size(18.dp), tint = Accent) }
+                        IconButton(MediaWidget::playPause) { Icon(if (media.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (media.playing) "Pause" else "Play", Modifier.size(18.dp), tint = Accent) }
+                        IconButton(MediaWidget::next) { Icon(Icons.Filled.SkipNext, "Next track", Modifier.size(18.dp), tint = Accent) }
                     }
                 }
             }
