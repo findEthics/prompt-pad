@@ -13,8 +13,8 @@ android {
         applicationId = "com.hermes.promptpad"
         minSdk = 30
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.12"
+        versionCode = 16
+        versionName = "1.15"
         testInstrumentationRunner = "com.hermes.promptpad.RegressionRunner"
     }
 

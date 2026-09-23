@@ -30,6 +30,7 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = Prefs(this)
+        loadAccent(prefs.accentHex)
         if (prefs.instructionsSeenVer < INSTRUCTIONS_VERSION) screen = Screen.Instructions else screen = homeScreen
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {

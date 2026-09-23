@@ -14,6 +14,16 @@ class HomeLogicTest {
         assertEquals(1, textScaleIndex(99))
     }
 
+    @Test fun accentHexIsNormalisedAndMustBeReadableOnBlack() {
+        assertEquals("#FC7703", normalizeAccentHex(" #fc7703 "))
+        assertEquals(null, normalizeAccentHex("#FC770"))
+        assertEquals(null, normalizeAccentHex("#FC770300"))
+        assertEquals("#FC7703", accentHex(colorForAccentHex("#FC7703")))
+        assertEquals(false, accentIsReadableOnBlack(colorForAccentHex("#111111")))
+        assertEquals(true, accentIsReadableOnBlack(colorForAccentHex("#FC7703")))
+        assertEquals("#FC7703", accentHex(colorForAccentHex("broken")))
+    }
+
     @Test fun todayFiltersTimedAndUtcAllDayEventsByLocalDate() {
         val zone = ZoneId.of("Europe/Berlin")
         val today = LocalDate.parse("2026-09-10")

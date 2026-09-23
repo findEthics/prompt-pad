@@ -5,12 +5,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -26,6 +30,7 @@ fun SettingsScreen(
     onPreferencesChanged: () -> Unit,
 ) {
     var version by remember { mutableIntStateOf(0) }
+    var pickingAccent by remember { mutableStateOf(false) }
     var pickingLeftApp by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
     fun update(block: () -> Unit) { block(); version++; onPreferencesChanged() }
@@ -37,6 +42,7 @@ fun SettingsScreen(
         Header("settings", back)
         key(version) {
             Section("appearance")
+            AccentSetting(prefs) { pickingAccent = true }
             Toggle("battery in peak widget", prefs.showBattery) { update { prefs.showBattery = it } }
             Toggle("date in peak widget", prefs.showDate) { update { prefs.showDate = it } }
             Toggle("weather in peak widget", prefs.showWeather) { update { prefs.showWeather = it } }
@@ -85,9 +91,81 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.labelSmall, color = DotIdle)
         }
     }
+    if (pickingAccent) AccentPicker(
+        prefs,
+        onDismiss = { pickingAccent = false },
+        onChanged = { update {} },
+    )
     if (pickingLeftApp) AppPicker(
         onPick = { prefs.notifierLeftApp = it; pickingLeftApp = false; update {} },
         onDismiss = { pickingLeftApp = false },
+    )
+}
+
+@Composable
+private fun AccentSetting(prefs: Prefs, onPick: () -> Unit) {
+    Row48(onPick) {
+        Text("accent colour", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+        Text(prefs.accentHex, style = MaterialTheme.typography.bodySmall, color = Accent)
+        Box(Modifier.padding(start = 10.dp).size(20.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(4.dp)).background(Accent))
+    }
+}
+
+@Composable
+private fun AccentPicker(prefs: Prefs, onDismiss: () -> Unit, onChanged: () -> Unit) {
+    var hex by remember { mutableStateOf(prefs.accentHex) }
+    var red by remember { mutableIntStateOf((Accent.red * 255).toInt()) }
+    var green by remember { mutableIntStateOf((Accent.green * 255).toInt()) }
+    var blue by remember { mutableIntStateOf((Accent.blue * 255).toInt()) }
+    val color = colorForAccentHex(hex)
+    val valid = normalizeAccentHex(hex)?.let(::colorForAccentHex)?.let(::accentIsReadableOnBlack) == true
+    fun save() {
+        normalizeAccentHex(hex)?.takeIf { accentIsReadableOnBlack(colorForAccentHex(it)) }?.let {
+            prefs.accentHex = it
+            loadAccent(it)
+            hex = it
+            onChanged()
+        }
+    }
+    fun updateFromSliders() {
+        hex = "#%02X%02X%02X".format(red, green, blue)
+        save()
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Black,
+        title = { Text("accent colour", color = White) },
+        text = {
+            Column {
+                TextField(
+                    hex, { hex = it.uppercase(); save() }, singleLine = true,
+                    label = { Text("#RRGGBB") }, isError = hex.isNotBlank() && !valid,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Black, unfocusedContainerColor = Black,
+                        cursorColor = Accent, focusedIndicatorColor = Accent, unfocusedIndicatorColor = DotIdle,
+                    ),
+                )
+                listOf("red" to red, "green" to green, "blue" to blue).forEach { (label, value) ->
+                    Text(label, style = MaterialTheme.typography.bodySmall, color = Dim)
+                    Slider(value.toFloat(), { next ->
+                        when (label) { "red" -> red = next.toInt(); "green" -> green = next.toInt(); else -> blue = next.toInt() }
+                        updateFromSliders()
+                    }, valueRange = 0f..255f)
+                }
+                Box(Modifier.padding(top = 12.dp).size(48.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)).background(if (valid) color else Color.Transparent))
+                Text(
+                    if (valid) "Use any #RRGGBB colour readable on black." else "Use #RRGGBB with 4.5:1 contrast on black.",
+                    Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodySmall, color = if (valid) Dim else DotBad,
+                )
+            }
+        },
+        confirmButton = { Text("done", Modifier.clickable(onClick = onDismiss).padding(12.dp), color = Accent) },
+        dismissButton = { Text("reset", Modifier.clickable {
+            prefs.accentHex = DEFAULT_ACCENT_HEX
+            loadAccent(DEFAULT_ACCENT_HEX)
+            onChanged()
+            onDismiss()
+        }.padding(12.dp), color = Accent) },
     )
 }
 

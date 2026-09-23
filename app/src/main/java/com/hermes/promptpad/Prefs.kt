@@ -20,6 +20,9 @@ class Prefs(ctx: Context) {
     var tapToSleep: Boolean by BoolPref(p, "tapToSleep", false)
     var hideStatusBar: Boolean by BoolPref(p, "hideStatusBar", false)
     var notifierEnabled: Boolean by BoolPref(p, "notifierEnabled", true)
+    var accentHex: String
+        get() = normalizeAccentHex(p.getString("accentHex", DEFAULT_ACCENT_HEX).orEmpty()) ?: DEFAULT_ACCENT_HEX
+        set(value) = p.edit().putString("accentHex", value).apply()
     var peakApp: String
         get() = p.getString("peakApp", "promptpad:calendar")!!
         set(value) = p.edit().putString("peakApp", value).apply()
