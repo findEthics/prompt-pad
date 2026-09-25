@@ -13,7 +13,12 @@ import android.graphics.Rect
 
 // ponytail: native Instrumentation + UiAutomation; no test framework dependency.
 class RegressionRunner : Instrumentation() {
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); start() }
+    private var notifierOnly = false
+    override fun onCreate(arguments: Bundle?) {
+        notifierOnly = arguments?.getString("notifierOnly") == "true"
+        super.onCreate(arguments)
+        start()
+    }
     override fun onStart() {
         try {
             Prefs(targetContext).apply {
@@ -32,20 +37,49 @@ class RegressionRunner : Instrumentation() {
             store.saveTasks((0..30).map { Task(it.toLong(), "Task $it", false) })
             targetContext.startActivity(Intent(targetContext, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             await("Home visible") { nodes().any { it.text?.toString() == "Note" } }
+            await("notification listener connected", 30_000) { HubListener.listenerConnected() }
             context.startActivity(Intent().setClassName(context.packageName, NotificationTarget::class.java.name)
                 .putExtra("postFixture", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            await("notification posted") { HubListener.items.any { it.title == "Regression chat" && it.text == "Original message" } }
+            runCatching {
+                await("notification posted") { HubListener.items.any { it.title == "Regression chat" && it.text == "Original message" } }
+            }.getOrElse { error("${it.message}; fixture=${HubListener.items.filter { item -> item.pkg == context.packageName }.map { item -> item.title to item.messages }}") }
             val item = HubListener.items.first { it.title == "Regression chat" }
-            runOnMainSync { check(HubListener.sendReply(targetContext, item, "Test reply")) }
-            await("publisher reply update") {
-                android.os.ParcelFileDescriptor.AutoCloseInputStream(uiAutomation.executeShellCommand("cmd notification get ${item.key}"))
-                    .bufferedReader().use { "Test reply" in it.readText() }
+            var updated = item
+            for (round in 1..3) {
+                runOnMainSync { check(HubListener.sendReply(targetContext, updated, "R$round")) }
+                val priorIncoming = if (round == 1) "Original message" else "t${round - 1}"
+                await("reply $round echoed") {
+                    val echoed = HubListener.items.firstOrNull { it.key == item.key }
+                    echoed?.messages == listOf(HubMessage(priorIncoming), HubMessage("R$round", true)) &&
+                        android.os.ParcelFileDescriptor.AutoCloseInputStream(uiAutomation.executeShellCommand("cmd notification get ${item.key}"))
+                            .bufferedReader().use { "R$round" in it.readText() }
+                }
+                val echoed = HubListener.items.first { it.key == item.key }
+                check(echoed.title == "Regression chat") { "Round $round reply changed sender title to ${echoed.title} (prior ${updated.title})" }
+                if (round == 2) {
+                    // A same-key update before the app withdraws must not consume the reply guard.
+                    context.startActivity(Intent().setClassName(context.packageName, NotificationTarget::class.java.name)
+                        .putExtra("withdrawFixture", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    await("intermediate notification withdrawn") { !trayContains(item.key) }
+                    waitForIdleSync()
+                    SystemClock.sleep(300)
+                    check(HubListener.items.any { it.key == item.key }) { "Second reply card disappeared before repost" }
+                    context.startActivity(Intent().setClassName(context.packageName, NotificationTarget::class.java.name)
+                        .putExtra("postReply", true).putExtra("response", "R2")
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    await("second reply reposted") { trayContains(item.key) && HubListener.items.any { it.key == item.key } }
+                }
+                context.startActivity(Intent().setClassName(context.packageName, NotificationTarget::class.java.name)
+                    .putExtra("postIncoming", true).putExtra("response", "R$round")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                await("incoming $round repost") {
+                    HubListener.items.firstOrNull { it.key == item.key }?.messages ==
+                        listOf(HubMessage("t$round"), HubMessage("R$round", true))
+                }
+                updated = HubListener.items.first { it.key == item.key }
+                check(updated.latestReply == "R$round") { "Latest reply was not retained" }
             }
             check(trayContains(item.key)) { "Reply dismissed the system notification" }
-            val updated = HubListener.items.firstOrNull { it.key == item.key }
-            check(updated != null) { "Reply dismissed the Notifier item" }
-            check(updated.title == "Regression chat") { "Reply changed sender to ${updated.title}" }
-            check(updated.text.contains("Original message") && updated.replies.contains("Test reply")) { "Original/reply lost: ${updated.text}" }
             runOnMainSync { check(HubListener.open(targetContext, updated)) }
             await("content intent opened") { nodes().any { it.text?.toString() == "Conversation 71" } }
             targetContext.startActivity(Intent(targetContext, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -53,11 +87,21 @@ class RegressionRunner : Instrumentation() {
             targetContext.startActivity(Intent(targetContext, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             await("Home before dismissal") { nodes().any { it.text?.toString() == "Note" } }
             swipe(true)
-            await("reply visible") { nodes().any { it.text?.toString() == "You: Test reply" } }
+            await("latest exchange visible") {
+                nodes().any { it.text?.toString() == "t3" } &&
+                    nodes().any { it.text?.toString() == "You: R3" }
+            }
+            check(nodes().none { it.text?.toString() in listOf("You: R1", "You: R2", "t1", "t2") }) {
+                "Old conversation messages remained visible"
+            }
             val bounds = Rect().also(nodes().first { it.text?.toString() == item.title }::getBoundsInScreen)
             swipe(true, bounds.centerY().toFloat() / targetContext.resources.displayMetrics.heightPixels)
             await("system dismissal") { !trayContains(item.key) && HubListener.items.none { it.key == item.key } }
             check(!trayContains("|72|")) { "Group summary remained in the tray" }
+            if (notifierOnly) {
+                finish(Activity.RESULT_OK, Bundle().apply { putString("stream", "PASS: three-round notifier reply/repost, latest exchange, sender title, UI and tray dismissal\n") })
+                return
+            }
             targetContext.startActivity(Intent(targetContext, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             await("Home visible") { nodes().any { it.text?.toString() == "Note" } }
             checkNotesAndTodos()
@@ -227,8 +271,8 @@ class RegressionRunner : Instrumentation() {
     }
     private fun trayContains(key: String): Boolean = android.os.ParcelFileDescriptor.AutoCloseInputStream(
         uiAutomation.executeShellCommand("cmd notification list")).bufferedReader().use { key in it.readText() }
-    private fun await(label: String, predicate: () -> Boolean) {
-        val end = SystemClock.uptimeMillis() + 8000
+    private fun await(label: String, timeoutMs: Long = 8000, predicate: () -> Boolean) {
+        val end = SystemClock.uptimeMillis() + timeoutMs
         while (SystemClock.uptimeMillis() < end) { if (predicate()) return; SystemClock.sleep(100) }
         error("Timed out: $label")
     }

@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -16,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
@@ -119,13 +122,20 @@ private fun AccentPicker(prefs: Prefs, onDismiss: () -> Unit, onChanged: () -> U
     var blue by remember { mutableIntStateOf((Accent.blue * 255).toInt()) }
     val color = colorForAccentHex(hex)
     val valid = normalizeAccentHex(hex)?.let(::colorForAccentHex)?.let(::accentIsReadableOnBlack) == true
-    fun save() {
-        normalizeAccentHex(hex)?.takeIf { accentIsReadableOnBlack(colorForAccentHex(it)) }?.let {
-            prefs.accentHex = it
-            loadAccent(it)
-            hex = it
-            onChanged()
-        }
+    fun save(): Boolean {
+        val value = normalizeAccentHex(hex) ?: return false
+        red = value.substring(1, 3).toInt(16)
+        green = value.substring(3, 5).toInt(16)
+        blue = value.substring(5, 7).toInt(16)
+        if (!accentIsReadableOnBlack(colorForAccentHex(value))) return false
+        prefs.accentHex = value
+        loadAccent(value)
+        hex = value
+        onChanged()
+        return true
+    }
+    fun commitAndDismiss() {
+        if (save()) onDismiss()
     }
     fun updateFromSliders() {
         hex = "#%02X%02X%02X".format(red, green, blue)
@@ -139,6 +149,8 @@ private fun AccentPicker(prefs: Prefs, onDismiss: () -> Unit, onChanged: () -> U
             Column {
                 TextField(
                     hex, { hex = it.uppercase(); save() }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { commitAndDismiss() }),
                     label = { Text("#RRGGBB") }, isError = hex.isNotBlank() && !valid,
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Black, unfocusedContainerColor = Black,
@@ -159,7 +171,7 @@ private fun AccentPicker(prefs: Prefs, onDismiss: () -> Unit, onChanged: () -> U
                 )
             }
         },
-        confirmButton = { Text("done", Modifier.clickable(onClick = onDismiss).padding(12.dp), color = Accent) },
+        confirmButton = { Text("done", Modifier.clickable { commitAndDismiss() }.padding(12.dp), color = Accent) },
         dismissButton = { Text("reset", Modifier.clickable {
             prefs.accentHex = DEFAULT_ACCENT_HEX
             loadAccent(DEFAULT_ACCENT_HEX)

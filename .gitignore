@@ -4,5 +4,6 @@ local.properties
 *.jks
 *.keystore
 .idea/
+.DS_Store
 .env
 prompt-pad-release.jks

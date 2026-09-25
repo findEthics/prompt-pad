@@ -169,9 +169,11 @@ fun HubScreen(prefs: Prefs, tick: Int, back: () -> Unit, nav: (Screen) -> Unit) 
                                 }.padding(start = 8.dp),
                                 style = MaterialTheme.typography.bodyMedium, color = Accent)
                         }
-                        if (item.text.isNotBlank()) Text(item.text, style = MaterialTheme.typography.bodySmall, color = Dim,
-                            maxLines = 5, overflow = TextOverflow.Ellipsis)
-                        item.replies.forEach { Text("You: $it", style = MaterialTheme.typography.bodySmall, color = Accent) }
+                        item.messages.forEach { message ->
+                            Text(if (message.isUser) "You: ${message.text}" else message.text,
+                                style = MaterialTheme.typography.bodySmall, color = if (message.isUser) Accent else Dim,
+                                maxLines = 5, overflow = TextOverflow.Ellipsis)
+                        }
                         if (replyingTo == item.key && item.reply != null) {
                             var draft by remember(item.key) { mutableStateOf("") }
                             val focus = remember(item.key) { FocusRequester() }

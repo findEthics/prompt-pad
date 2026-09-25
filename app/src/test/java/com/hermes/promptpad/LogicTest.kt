@@ -84,6 +84,33 @@ class LogicTest {
         assertEquals("Dave", HubListener.senderTitle("Dave", "You"))
         assertEquals("Dave", HubListener.senderTitle("Dave", "Dave"))
         assertEquals("You", HubListener.senderTitle(null, "You"))
+        assertEquals("Dave", HubListener.senderTitle("Dave", "My account", "My account"))
+        assertEquals("Dave", HubListener.senderTitle("Dave", "You", "My account"))
+        assertEquals("Another sender", HubListener.senderTitle("Dave", "Another sender", "My account"))
+    }
+
+    @Test fun repostShowsOnlyLatestIncomingAndReplyAcrossThreeRounds() {
+        var visible = listOf(HubMessage("t0"))
+        assertEquals(visible, HubListener.latestMessages(visible, null, emptyList()))
+        for (round in 1..3) {
+            visible = HubListener.latestMessages(visible, "R$round", visible) // before repost
+            visible = HubListener.latestMessages(
+                listOf(HubMessage("R$round", true), HubMessage("t$round")), "R$round", visible,
+            )
+            assertEquals(listOf(HubMessage("t$round"), HubMessage("R$round", true)), visible)
+        }
+        assertEquals(visible, HubListener.latestMessages(emptyList(), "R3", visible)) // transient withdrawal
+    }
+
+    @Test fun fullHistoryAndDuplicateTextStillShowOnlyLatestPair() {
+        val history = listOf(
+            HubMessage("t1"), HubMessage("R1", true), HubMessage("t2"), HubMessage("R2", true),
+            HubMessage("t3"), HubMessage("R3", true),
+        )
+        assertEquals(listOf(HubMessage("t3"), HubMessage("R3", true)),
+            HubListener.latestMessages(history, "R3", emptyList()))
+        assertEquals(listOf(HubMessage("same"), HubMessage("same", true)),
+            HubListener.latestMessages(listOf(HubMessage("same"), HubMessage("same", true)), "same", emptyList()))
     }
 
     @Test fun hubFiltersInterchangeCallsAndAllAndDropEmail() {

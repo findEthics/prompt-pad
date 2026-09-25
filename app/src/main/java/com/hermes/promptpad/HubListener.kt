@@ -15,6 +15,8 @@ import androidx.compose.runtime.mutableStateListOf
 
 enum class HubKind { MESSAGE, CALL, OTHER }
 
+data class HubMessage(val text: String, val isUser: Boolean = false)
+
 data class HubItem(
     val key: String,
     val pkg: String,
@@ -25,7 +27,8 @@ data class HubItem(
     val reply: Pair<PendingIntent, RemoteInput>?,
     val content: PendingIntent?,
     val starred: Boolean = false,
-    val replies: List<String> = emptyList(),
+    val messages: List<HubMessage> = emptyList(),
+    val latestReply: String? = null,
 )
 
 /** ponytail: one in-memory list owned by the service; the Hub UI is only alive while the app is. */
@@ -46,9 +49,23 @@ class HubListener : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification) = add(sbn)
 
-    override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        // A direct reply can briefly withdraw the old card before reposting it as "You".
-        if (!retained.remove(sbn.key) && sbn.key !in replySenders) items.removeAll { it.key == sbn.key }
+    override fun onNotificationRemoved(sbn: StatusBarNotification, rankingMap: RankingMap, reason: Int) {
+        if (retained.remove(sbn.key)) return
+        if (reason != REASON_APP_CANCEL && reason != REASON_APP_CANCEL_ALL) {
+            replySenders.remove(sbn.key)
+            items.removeAll { it.key == sbn.key }
+            return
+        }
+        // Apps commonly cancel-then-repost the same key (e.g. to relabel an outgoing reply as
+        // "You"); wait briefly for that repost instead of dropping the card on every app-cancel.
+        val key = sbn.key
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            val stillGone = runCatching { listener?.activeNotifications?.none { it.key == key } }.getOrNull() ?: true
+            if (stillGone) {
+                replySenders.remove(key)
+                items.removeAll { it.key == key }
+            }
+        }, CANCEL_GRACE_MS)
     }
 
     private fun add(sbn: StatusBarNotification) {
@@ -66,23 +83,29 @@ class HubListener : NotificationListenerService() {
             return
         }
         val x = n.extras
-        // Messaging apps relabel their reposted outgoing notification as "You"; keep the sender title.
+        // Outgoing reposts may use "You" or the MessagingStyle account name as the title.
         val title = x.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: return
-        val senderTitle = senderTitle(replySenders.remove(sbn.key), title)
-        // ponytail: MessagingStyle carries the tray's appended conversation; fall back to plain text.
-        val messages = androidx.core.app.NotificationCompat.MessagingStyle
-            .extractMessagingStyleFromNotification(n)?.messages
-            ?.mapNotNull { it.text?.toString() }?.filter { it.isNotBlank() }
-        val incoming = if (!messages.isNullOrEmpty()) messages.takeLast(8).joinToString("\n")
-            else x.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
+        val style = androidx.core.app.NotificationCompat.MessagingStyle.extractMessagingStyleFromNotification(n)
+        val userName = style?.user?.name?.toString()
+        val original = replySenders[sbn.key]?.sender
+            ?: previous?.title?.takeUnless { it == "You" || it == userName }
+        val senderTitle = senderTitle(original, title, userName)
+        val history = style?.messages?.sortedBy { it.timestamp }?.takeLast(8)
+            ?.mapNotNull { message -> message.text?.toString()?.takeIf(String::isNotBlank)?.let {
+                HubMessage(it, message.person == null || message.person?.name == style.user?.name)
+            } }
+        val current = if (!history.isNullOrEmpty()) history else {
+            val text = x.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
                 ?: x.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
-        val replies = previous?.replies.orEmpty()
-        // ponytail: keep the conversation only while this system notification lives.
-        val text = if (replies.isEmpty()) incoming else
-            (previous!!.text.lines() + incoming.lines().filterNot { it in replies }).distinct().joinToString("\n")
+            listOfNotNull(text.takeIf { it.isNotBlank() }?.let {
+                HubMessage(it, title == "You" && it == previous?.latestReply)
+            })
+        }
+        val messages = latestMessages(current, previous?.latestReply, previous?.messages.orEmpty())
         val updated = HubItem(
-            sbn.key, sbn.packageName, senderTitle, text, sbn.postTime,
-            kindOf(sbn.packageName, n), replyOf(n), n.contentIntent, previous?.starred ?: false, replies,
+            sbn.key, sbn.packageName, senderTitle, messages.joinToString("\n") { it.text }, sbn.postTime,
+            kindOf(sbn.packageName, n), replyOf(n), n.contentIntent, previous?.starred ?: false,
+            messages, previous?.latestReply,
         )
         if (previousIndex >= 0) items[previousIndex] = updated else items.add(0, updated)
     }
@@ -90,8 +113,14 @@ class HubListener : NotificationListenerService() {
     companion object {
         val items = mutableStateListOf<HubItem>()
         private val retained = mutableSetOf<String>()
-        private val replySenders = mutableMapOf<String, String>()
+        private class PendingReply(val sender: String)
+        private val replySenders = mutableMapOf<String, PendingReply>()
+        // ponytail: fixed grace window for an app's own cancel-then-repost cycle; lengthen if real
+        // reposts take longer, or swap for an active-notification poll if that proves too fragile.
+        private const val CANCEL_GRACE_MS = 3_000L
         @Volatile private var listener: HubListener? = null
+
+        internal fun listenerConnected() = listener != null
 
         fun isEnabled(ctx: Context): Boolean =
             (android.provider.Settings.Secure.getString(ctx.contentResolver, "enabled_notification_listeners") ?: "")
@@ -104,8 +133,16 @@ class HubListener : NotificationListenerService() {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
 
-        fun senderTitle(replySender: String?, current: String) =
-            replySender?.takeIf { current == "You" } ?: current
+        fun senderTitle(replySender: String?, current: String, userName: String? = null) =
+            replySender?.takeIf { current == "You" || current == userName } ?: current
+
+        // ponytail: only the latest local reply survives a repost; mirror the tray, not a chat archive.
+        internal fun latestMessages(current: List<HubMessage>, latestReply: String?, previous: List<HubMessage>): List<HubMessage> {
+            if (latestReply == null) return current
+            val incoming = current.lastOrNull { !it.isUser }
+                ?: previous.lastOrNull { !it.isUser }
+            return listOfNotNull(incoming, HubMessage(latestReply, true))
+        }
 
         fun isMessagingPackage(pkg: String): Boolean = pkg in setOf(
             "com.whatsapp", "com.whatsapp.w4b", "org.telegram.messenger", "org.telegram.messenger.web",
@@ -126,6 +163,7 @@ class HubListener : NotificationListenerService() {
 
         fun retain(key: String) {
             retained += key
+            replySenders.remove(key)
             runCatching { listener?.cancelNotification(key) }
         }
 
@@ -181,11 +219,17 @@ class HubListener : NotificationListenerService() {
                 arrayOf(remoteInput), intent,
                 android.os.Bundle().apply { putCharSequence(remoteInput.resultKey, text) },
             )
-            val previousSender = replySenders.put(item.key, item.title)
+            val pending = PendingReply(item.title)
+            val previousSender = replySenders.put(item.key, pending)
             return runCatching {
                 pendingIntent.send(ctx, 0, intent)
                 val index = items.indexOfFirst { it.key == item.key }
-                if (index >= 0) items[index] = items[index].let { it.copy(replies = it.replies + text) }
+                if (index >= 0) items[index] = items[index].let {
+                    it.copy(messages = latestMessages(it.messages, text, it.messages), latestReply = text)
+                }
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    if (replySenders[item.key] === pending) replySenders.remove(item.key)
+                }, CANCEL_GRACE_MS)
                 true
             }.getOrElse {
                 if (previousSender == null) replySenders.remove(item.key) else replySenders[item.key] = previousSender
